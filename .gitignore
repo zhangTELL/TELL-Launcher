@@ -5,3 +5,4 @@ publish/
 *.user
 *.suo
 ui-screenshot.png
+.workbuddy/

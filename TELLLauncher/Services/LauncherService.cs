@@ -1,3 +1,4 @@
+using System.IO;
 using TELLLauncher.Models;
 
 namespace TELLLauncher.Services;
@@ -45,6 +46,7 @@ public sealed class LauncherService
             config.Version = 2;
         }
 
+        EnsureSteamLibraryCard(config);
         _shortcutScanner.ScanAndMerge(config);
         _configStore.Save(config);
         return config;
@@ -78,6 +80,7 @@ public sealed class LauncherService
             config.Version = 2;
         }
 
+        EnsureSteamLibraryCard(config);
         await _shortcutScanner.ScanAndMergeAsync(config);
         _configStore.Save(config);
         return config;
@@ -175,5 +178,32 @@ public sealed class LauncherService
                 }
             }
         }
+    }
+
+    private void EnsureSteamLibraryCard(LauncherConfig config)
+    {
+        if (config.Apps.Any(app => app.IsSteamLibrary) ||
+            config.HiddenGamePaths.Contains(
+                "steam://library",
+                StringComparer.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        var steamPath = SteamLibraryService.DetectSteamInstallPath();
+        var steamExe = string.IsNullOrWhiteSpace(steamPath)
+            ? null
+            : Path.Combine(steamPath, "steam.exe");
+
+        config.Apps.Add(new AppEntry
+        {
+            Id = "steam-library",
+            Name = "Steam 游戏库",
+            TargetPath = "steam://library",
+            IconPath = File.Exists(steamExe) ? steamExe : null,
+            Group = AppGroup.Game,
+            Order = -1000,
+            IsSteamLibrary = true
+        });
     }
 }

@@ -23,9 +23,10 @@ public class MainViewModelTests
 
             Assert.Equal(4, viewModel.IdeApps.Count);
             Assert.Equal(6, viewModel.AiToolApps.Count);
-            Assert.Empty(viewModel.GameApps);
+            Assert.Single(viewModel.GameApps);
+            Assert.True(viewModel.GameApps[0].IsSteamLibrary);
             Assert.Contains("办公 10", viewModel.StatusText);
-            Assert.Contains("游戏 0", viewModel.StatusText);
+            Assert.Contains("游戏 1", viewModel.StatusText);
         }
         finally
         {
@@ -73,7 +74,8 @@ public class MainViewModelTests
             Assert.Equal(entry.TargetPath, fakeLauncher.LastPath);
             // 验证 LastLaunchedAt 已更新
             var savedConfig = store.Load();
-            var savedEntry = Assert.Single(savedConfig.Apps);
+            var savedEntry = Assert.Single(
+                savedConfig.Apps.Where(app => app.Name == "Test"));
             Assert.NotNull(savedEntry.LastLaunchedAt);
             Assert.True(savedEntry.LastLaunchedAt >= now);
         }
@@ -331,11 +333,12 @@ public class MainViewModelTests
                 new AppLocator(Array.Empty<string>()),
                 new ShortcutScanner(Array.Empty<string>())));
             await viewModel.LoadAsync();
-            var game = viewModel.GameApps.Single();
+            var game = viewModel.GameApps.Single(app => app.Name == "Test Game");
 
             viewModel.RemoveApp(game);
 
-            Assert.Empty(viewModel.GameApps);
+            Assert.DoesNotContain(viewModel.GameApps, app => app.Name == "Test Game");
+            Assert.Contains(viewModel.GameApps, app => app.IsSteamLibrary);
             var saved = store.Load();
             Assert.Contains(@"C:\Games\Test.exe", saved.HiddenGamePaths);
         }
@@ -430,7 +433,7 @@ public class MainViewModelTests
 
             Assert.DoesNotContain(viewModel.IdeApps, app => app.Model.Id == item.Model.Id);
             Assert.Contains(viewModel.GameApps, app => app.Model.Id == item.Model.Id);
-            Assert.Equal(0, viewModel.GameApps.First(app => app.Model.Id == item.Model.Id).Model.Order);
+            Assert.Equal(1, viewModel.GameApps.First(app => app.Model.Id == item.Model.Id).Model.Order);
         }
         finally
         {

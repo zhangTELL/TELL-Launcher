@@ -113,6 +113,16 @@ public partial class MainWindow : Window
 
     private void OnOpenDetailRequested(AppItemViewModel item)
     {
+        if (item.IsSteamLibrary)
+        {
+            var steamWindow = new SteamLibraryWindow
+            {
+                Owner = this
+            };
+            steamWindow.ShowDialog();
+            return;
+        }
+
         var detailWindow = new AppDetailWindow(_viewModel, item)
         {
             Owner = this

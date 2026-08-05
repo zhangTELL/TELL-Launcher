@@ -22,5 +22,7 @@ public sealed class AppEntry
 
     public bool IsManual { get; set; }
 
+    public bool IsSteamLibrary { get; set; }
+
     public DateTime? LastLaunchedAt { get; set; }
 }

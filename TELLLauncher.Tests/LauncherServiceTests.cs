@@ -39,7 +39,9 @@ public class LauncherServiceTests
 
             service.LoadOrCreate();
 
-            var app = Assert.Single(store.Load().Apps);
+            var savedApps = store.Load().Apps;
+            var app = Assert.Single(savedApps.Where(item => item.Name == "VS Code"));
+            Assert.Contains(savedApps, item => item.IsSteamLibrary);
             Assert.Equal(executable, app.TargetPath);
         }
         finally
@@ -85,7 +87,9 @@ public class LauncherServiceTests
 
             service.LoadOrCreate();
 
-            var app = Assert.Single(store.Load().Apps);
+            var savedApps = store.Load().Apps;
+            var app = Assert.Single(savedApps.Where(item => item.Name == "VS Code"));
+            Assert.Contains(savedApps, item => item.IsSteamLibrary);
             Assert.Equal(@"C:\Custom\Code.exe", app.TargetPath);
         }
         finally

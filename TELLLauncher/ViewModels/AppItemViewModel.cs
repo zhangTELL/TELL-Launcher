@@ -37,6 +37,8 @@ public sealed class AppItemViewModel : ObservableObject
 
     public bool IsResolved => !IsMissing;
 
+    public bool IsSteamLibrary => Model.IsSteamLibrary;
+
     public string? DetailImagePath => Model.DetailImagePath;
 
     public ImageSource? DetailImageSource
@@ -92,6 +94,7 @@ public sealed class AppItemViewModel : ObservableObject
         OnPropertyChanged(nameof(HasNoIcon));
         OnPropertyChanged(nameof(IsMissing));
         OnPropertyChanged(nameof(IsResolved));
+        OnPropertyChanged(nameof(IsSteamLibrary));
         OnPropertyChanged(nameof(DetailImagePath));
         OnPropertyChanged(nameof(DetailImageSource));
         OnPropertyChanged(nameof(Details));
