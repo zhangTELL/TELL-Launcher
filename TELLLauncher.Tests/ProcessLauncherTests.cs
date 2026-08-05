@@ -35,6 +35,27 @@ public class ProcessLauncherTests
         }
     }
 
+    [Theory]
+    [InlineData("https://example.com")]
+    [InlineData("steam://library")]
+    [InlineData("steam://rungameid/12345")]
+    public void IsUriTarget_ReturnsTrue_ForUriTargets(string path)
+    {
+        Assert.True(ProcessLauncher.IsUriTarget(path));
+    }
+
+    [Theory]
+    [InlineData(@"C:\Games\App.exe")]
+    [InlineData(@"D:\Steam\steam.exe")]
+    [InlineData("relative\\path.exe")]
+    [InlineData(null)]
+    [InlineData("")]
+    [InlineData("   ")]
+    public void IsUriTarget_ReturnsFalse_ForFilePathsAndEmpty(string? path)
+    {
+        Assert.False(ProcessLauncher.IsUriTarget(path));
+    }
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(

@@ -450,6 +450,132 @@ public class MainViewModelTests
         return path;
     }
 
+    [Fact]
+    public async Task Launch_WithUriTarget_BypassesMissingCheckAndLaunches()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var store = new ConfigStore(directory);
+            var entry = new AppEntry
+            {
+                Name = "Url Game",
+                TargetPath = "steam://rungameid/12345",
+                Group = AppGroup.Game,
+                Order = 0
+            };
+            store.Save(new LauncherConfig
+            {
+                DefaultsInitialized = true,
+                Version = 2,
+                Apps = { entry }
+            });
+
+            var service = new LauncherService(
+                store,
+                new AppLocator(Array.Empty<string>()),
+                new ShortcutScanner(Array.Empty<string>()));
+            var fakeLauncher = new FakeProcessLauncher(
+                new LaunchResult(true, string.Empty));
+            var viewModel = new MainViewModel(service, fakeLauncher);
+            await viewModel.LoadAsync();
+            AppItemViewModel? locateRequested = null;
+            viewModel.LocateRequested += item => locateRequested = item;
+
+            var loadedItem = viewModel.GameApps.Single(app => app.Name == "Url Game");
+            Assert.False(loadedItem.IsMissing);
+            viewModel.Launch(loadedItem);
+
+            Assert.Null(locateRequested);
+            Assert.False(viewModel.HasNotification);
+            Assert.Equal(entry.TargetPath, fakeLauncher.LastPath);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task SelectedNav_SwitchesCurrentAppsAndTitle()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var viewModel = CreateViewModel(directory);
+            await viewModel.LoadAsync();
+
+            Assert.Equal(NavSection.Ide, viewModel.SelectedNav);
+            Assert.Equal("IDE", viewModel.ContentTitle);
+            Assert.Equal(viewModel.IdeApps.Count, viewModel.CurrentApps.Count);
+
+            viewModel.SelectNavCommand.Execute(NavSection.Game);
+
+            Assert.Equal("游戏", viewModel.ContentTitle);
+            Assert.Equal(viewModel.GameApps.Count, viewModel.CurrentApps.Count);
+            Assert.Contains("个", viewModel.ContentSubtitle);
+
+            viewModel.SelectNavCommand.Execute(NavSection.AiTool);
+
+            Assert.Equal("AI 工具", viewModel.ContentTitle);
+            Assert.Equal(viewModel.AiToolApps.Count, viewModel.CurrentApps.Count);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RecentApps_ListsLaunchedApps_AfterLaunch()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var store = new ConfigStore(directory);
+            var entry = new AppEntry
+            {
+                Name = "Recent Test",
+                TargetPath = Path.Combine(directory, "app.exe"),
+                Group = AppGroup.Ide,
+                Order = 0
+            };
+            File.WriteAllText(entry.TargetPath!, string.Empty);
+            store.Save(new LauncherConfig
+            {
+                DefaultsInitialized = true,
+                Version = 2,
+                Apps = { entry }
+            });
+
+            var service = new LauncherService(
+                store,
+                new AppLocator(Array.Empty<string>()),
+                new ShortcutScanner(Array.Empty<string>()));
+            var fakeLauncher = new FakeProcessLauncher(
+                new LaunchResult(true, string.Empty));
+            var viewModel = new MainViewModel(service, fakeLauncher);
+            await viewModel.LoadAsync();
+            viewModel.SelectNavCommand.Execute(NavSection.Recent);
+
+            Assert.Empty(viewModel.CurrentApps);
+            Assert.Equal("还没有启动记录", viewModel.ContentSubtitle);
+
+            var item = viewModel.IdeApps.Single(app => app.Name == "Recent Test");
+            viewModel.Launch(item);
+
+            Assert.Single(viewModel.CurrentApps);
+            Assert.Equal("Recent Test", viewModel.CurrentApps[0].Name);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static MainViewModel CreateViewModel(string directory)
     {
         var service = new LauncherService(

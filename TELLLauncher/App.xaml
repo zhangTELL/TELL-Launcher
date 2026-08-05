@@ -6,12 +6,20 @@
     <Application.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
-        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#F4F5F7" />
-        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#1F2937" />
-        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#6B7280" />
-        <SolidColorBrush x:Key="AccentBrush" Color="#2563EB" />
-        <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
-        <SolidColorBrush x:Key="CardBorderBrush" Color="#E5E7EB" />
+        <!-- Steam 深色主题 token -->
+        <SolidColorBrush x:Key="WindowBackgroundBrush" Color="#1B2838" />
+        <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#171D25" />
+        <SolidColorBrush x:Key="TextPrimaryBrush" Color="#FFFFFF" />
+        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#8F98A0" />
+        <SolidColorBrush x:Key="AccentBrush" Color="#66C0F4" />
+        <SolidColorBrush x:Key="CardBackgroundBrush" Color="#22344A" />
+        <SolidColorBrush x:Key="CardHoverBackgroundBrush" Color="#2A475E" />
+        <SolidColorBrush x:Key="CardBorderBrush" Color="#101822" />
+        <SolidColorBrush x:Key="NavSelectedBrush" Color="#3D4450" />
+        <LinearGradientBrush x:Key="LaunchGreenBrush" StartPoint="0,0" EndPoint="0,1">
+            <GradientStop Color="#79A626" Offset="0" />
+            <GradientStop Color="#5C7E10" Offset="1" />
+        </LinearGradientBrush>
 
         <Style x:Key="SectionHeaderText" TargetType="TextBlock">
             <Setter Property="FontSize" Value="16" />
@@ -22,10 +30,10 @@
         <Style x:Key="IconButton" TargetType="Button">
             <Setter Property="Width" Value="38" />
             <Setter Property="Height" Value="38" />
-            <Setter Property="Background" Value="#F3F4F6" />
+            <Setter Property="Background" Value="#22344A" />
             <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Foreground" Value="#374151" />
+            <Setter Property="Foreground" Value="#C7D5E0" />
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
             <Setter Property="FontSize" Value="16" />
             <Setter Property="Cursor" Value="Hand" />
@@ -36,16 +44,17 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6">
+                                CornerRadius="4">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#E5E7EB" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#2A475E" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#66C0F4" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#D1D5DB" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#1B2838" />
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="ButtonBorder" Property="Opacity" Value="0.5" />
@@ -59,10 +68,10 @@
         <Style x:Key="MiniIconButton" TargetType="Button">
             <Setter Property="Width" Value="26" />
             <Setter Property="Height" Value="26" />
-            <Setter Property="Background" Value="#F3F4F6" />
+            <Setter Property="Background" Value="#22344A" />
             <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
             <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Foreground" Value="#374151" />
+            <Setter Property="Foreground" Value="#C7D5E0" />
             <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
             <Setter Property="FontSize" Value="11" />
             <Setter Property="Cursor" Value="Hand" />
@@ -73,16 +82,17 @@
                                 Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="5">
+                                CornerRadius="4">
                             <ContentPresenter HorizontalAlignment="Center"
                                               VerticalAlignment="Center" />
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#E5E7EB" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#2A475E" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#66C0F4" />
                             </Trigger>
                             <Trigger Property="IsPressed" Value="True">
-                                <Setter TargetName="ButtonBorder" Property="Background" Value="#D1D5DB" />
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#1B2838" />
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -90,60 +100,317 @@
             </Setter>
         </Style>
 
+        <!-- 侧边栏导航按钮 -->
+        <Style x:Key="NavButton" TargetType="Button">
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="Padding" Value="20,7" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#C7D5E0" />
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#232D3A" />
+                    <Setter Property="Foreground" Value="#FFFFFF" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- 对话框深色按钮 -->
+        <Style x:Key="DarkDialogButton" TargetType="Button">
+            <Setter Property="Background" Value="#2A475E" />
+            <Setter Property="Foreground" Value="#C7D5E0" />
+            <Setter Property="BorderBrush" Value="#3D4450" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="ButtonBorder"
+                                CornerRadius="4"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#3D5A75" />
+                                <Setter TargetName="ButtonBorder" Property="BorderBrush" Value="#66C0F4" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="ButtonBorder" Property="Background" Value="#22344A" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 深色输入框 -->
+        <Style x:Key="DarkTextBox" TargetType="TextBox">
+            <Setter Property="Background" Value="#101822" />
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="CaretBrush" Value="#FFFFFF" />
+            <Setter Property="BorderBrush" Value="#3D4450" />
+            <Setter Property="BorderThickness" Value="1" />
+        </Style>
+
+        <!-- 深色右键菜单 -->
+        <Style TargetType="ContextMenu">
+            <Setter Property="Background" Value="#171D25" />
+            <Setter Property="BorderBrush" Value="#3D4450" />
+            <Setter Property="Foreground" Value="#C7D5E0" />
+            <Setter Property="Padding" Value="4" />
+        </Style>
+        <Style TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#C7D5E0" />
+            <Setter Property="Padding" Value="10,5" />
+        </Style>
+
+        <!-- 应用卡片：游戏竖版胶囊 / 办公横版卡 -->
         <DataTemplate DataType="{x:Type vm:AppItemViewModel}">
-            <Grid Width="168"
-                  Height="168"
-                  Margin="8">
-                <Border ToolTip="{Binding TargetPath}">
+            <Grid Margin="8">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Setter Property="Width" Value="340" />
+                        <Setter Property="Height" Value="96" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsGame}" Value="True">
+                                <Setter Property="Width" Value="184" />
+                                <Setter Property="Height" Value="276" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+
+                <!-- ============ 游戏竖版胶囊 ============ -->
+                <Border x:Name="GameCard"
+                        CornerRadius="4"
+                        RenderTransformOrigin="0.5,0.5"
+                        Visibility="{Binding IsGame, Converter={StaticResource BoolToVis}}"
+                        ToolTip="{Binding Name}">
+                    <Border.RenderTransform>
+                        <ScaleTransform x:Name="GameCardScale" />
+                    </Border.RenderTransform>
+                    <Grid>
+                        <!-- 无封面回退：深色渐变底 + 大图标/首字母 + 名称 -->
+                        <Border CornerRadius="4">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#2A475E" Offset="0" />
+                                    <GradientStop Color="#1B2838" Offset="1" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <StackPanel HorizontalAlignment="Center"
+                                        VerticalAlignment="Center">
+                                <Border Width="64"
+                                        Height="64"
+                                        CornerRadius="8"
+                                        Background="#101822"
+                                        HorizontalAlignment="Center">
+                                    <Grid>
+                                        <TextBlock Text="{Binding Initial}"
+                                                   HorizontalAlignment="Center"
+                                                   VerticalAlignment="Center"
+                                                   FontSize="26"
+                                                   FontWeight="SemiBold"
+                                                   Foreground="{StaticResource AccentBrush}"
+                                                   Visibility="{Binding HasNoIcon, Converter={StaticResource BoolToVis}}" />
+                                        <Image Source="{Binding LargeIcon}"
+                                               Width="48"
+                                               Height="48"
+                                               Stretch="Uniform"
+                                               Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}" />
+                                    </Grid>
+                                </Border>
+                                <TextBlock Text="{Binding Name}"
+                                           Margin="0,10,0,0"
+                                           MaxWidth="150"
+                                           HorizontalAlignment="Center"
+                                           FontSize="13"
+                                           FontWeight="SemiBold"
+                                           Foreground="#C7D5E0"
+                                           TextAlignment="Center"
+                                           TextWrapping="Wrap"
+                                           TextTrimming="CharacterEllipsis"
+                                           MaxHeight="36" />
+                            </StackPanel>
+                        </Border>
+
+                        <!-- 封面图（有封面时盖住回退层） -->
+                        <Border CornerRadius="4"
+                                Visibility="{Binding HasCapsuleImage, Converter={StaticResource BoolToVis}}">
+                            <Border.Background>
+                                <ImageBrush ImageSource="{Binding CapsuleImage}"
+                                            Stretch="UniformToFill" />
+                            </Border.Background>
+                        </Border>
+
+                        <!-- 悬停亮度层 -->
+                        <Border x:Name="GameHoverGlow"
+                                CornerRadius="4"
+                                Background="White"
+                                Opacity="0" />
+
+                        <!-- 悬停时底部名称条（仅有封面时需要） -->
+                        <Border x:Name="GameNameOverlay"
+                                CornerRadius="0,0,4,4"
+                                VerticalAlignment="Bottom"
+                                Padding="10,8"
+                                Opacity="0"
+                                Visibility="{Binding HasCapsuleImage, Converter={StaticResource BoolToVis}}">
+                            <Border.Background>
+                                <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                    <GradientStop Color="#00101822" Offset="0" />
+                                    <GradientStop Color="#F2101822" Offset="1" />
+                                </LinearGradientBrush>
+                            </Border.Background>
+                            <TextBlock Text="{Binding Name}"
+                                       FontSize="13"
+                                       FontWeight="SemiBold"
+                                       Foreground="White"
+                                       TextTrimming="CharacterEllipsis" />
+                        </Border>
+
+                        <!-- 启动脉冲光环 -->
+                        <Border x:Name="GamePulse"
+                                CornerRadius="4"
+                                BorderBrush="{StaticResource AccentBrush}"
+                                BorderThickness="2"
+                                Opacity="0"
+                                IsHitTestVisible="False"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="GamePulseScale" />
+                            </Border.RenderTransform>
+                        </Border>
+
+                        <!-- 失效标记 -->
+                        <Border HorizontalAlignment="Left"
+                                VerticalAlignment="Top"
+                                Margin="6"
+                                Padding="6,2"
+                                CornerRadius="3"
+                                Background="#B45309"
+                                Visibility="{Binding IsMissing, Converter={StaticResource BoolToVis}}">
+                            <TextBlock Text="未定位"
+                                       FontSize="11"
+                                       Foreground="White" />
+                        </Border>
+                    </Grid>
                     <Border.Style>
                         <Style TargetType="Border">
-                            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}" />
-                            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
-                            <Setter Property="BorderThickness" Value="1" />
-                            <Setter Property="CornerRadius" Value="8" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsMissing}" Value="True">
-                                    <Setter Property="Background" Value="#FAFAFA" />
-                                    <Setter Property="Opacity" Value="0.72" />
+                                    <Setter Property="Opacity" Value="0.55" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </Border.Style>
-                    <StackPanel Margin="14">
-                        <Border Width="48"
-                                Height="48"
-                                CornerRadius="8"
-                                Background="#E8EEF7">
+                </Border>
+
+                <!-- ============ 办公横版卡 ============ -->
+                <Border x:Name="OfficeCard"
+                        CornerRadius="4"
+                        BorderThickness="1"
+                        RenderTransformOrigin="0.5,0.5"
+                        Visibility="{Binding IsOffice, Converter={StaticResource BoolToVis}}"
+                        ToolTip="{Binding TargetPath}">
+                    <Border.RenderTransform>
+                        <ScaleTransform x:Name="OfficeCardScale" />
+                    </Border.RenderTransform>
+                    <Grid>
+                        <!-- 启动脉冲光环 -->
+                        <Border x:Name="OfficePulse"
+                                CornerRadius="4"
+                                BorderBrush="{StaticResource AccentBrush}"
+                                BorderThickness="2"
+                                Opacity="0"
+                                IsHitTestVisible="False"
+                                RenderTransformOrigin="0.5,0.5">
+                            <Border.RenderTransform>
+                                <ScaleTransform x:Name="OfficePulseScale" />
+                            </Border.RenderTransform>
+                        </Border>
+                        <Grid Margin="14">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Border Width="52"
+                                Height="52"
+                                CornerRadius="6"
+                                Background="#101822"
+                                VerticalAlignment="Center">
                             <Grid>
                                 <TextBlock Text="{Binding Initial}"
                                            HorizontalAlignment="Center"
                                            VerticalAlignment="Center"
-                                           FontSize="20"
+                                           FontSize="22"
                                            FontWeight="SemiBold"
                                            Foreground="{StaticResource AccentBrush}"
                                            Visibility="{Binding HasNoIcon, Converter={StaticResource BoolToVis}}" />
                                 <Image Source="{Binding Icon}"
-                                       Width="34"
-                                       Height="34"
+                                       Width="38"
+                                       Height="38"
                                        Stretch="Uniform"
                                        Visibility="{Binding HasIcon, Converter={StaticResource BoolToVis}}" />
                             </Grid>
                         </Border>
-                        <TextBlock Text="{Binding Name}"
-                                   Margin="0,12,0,0"
-                                   MaxHeight="42"
-                                   FontSize="14"
-                                   FontWeight="SemiBold"
-                                   Foreground="{StaticResource TextPrimaryBrush}"
-                                   TextWrapping="Wrap" />
-                        <TextBlock Text="未定位"
-                                   Margin="0,8,0,0"
-                                   FontSize="12"
-                                   Foreground="#B45309"
-                                   Visibility="{Binding IsMissing, Converter={StaticResource BoolToVis}}" />
-                    </StackPanel>
+                        <StackPanel Grid.Column="1"
+                                    Margin="14,0,0,0"
+                                    VerticalAlignment="Center">
+                            <TextBlock Text="{Binding Name}"
+                                       FontSize="14"
+                                       FontWeight="SemiBold"
+                                       Foreground="{StaticResource TextPrimaryBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="{Binding Details}"
+                                       Margin="0,4,0,0"
+                                       FontSize="11"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       TextTrimming="CharacterEllipsis" />
+                            <TextBlock Text="未定位"
+                                       Margin="0,4,0,0"
+                                       FontSize="11"
+                                       Foreground="#F59E0B"
+                                       Visibility="{Binding IsMissing, Converter={StaticResource BoolToVis}}" />
+                        </StackPanel>
+                    </Grid>
+                    </Grid>
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="{StaticResource CardBackgroundBrush}" />
+                            <Setter Property="BorderBrush" Value="{StaticResource CardBorderBrush}" />
+                            <Style.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="{StaticResource CardHoverBackgroundBrush}" />
+                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}" />
+                                </Trigger>
+                                <DataTrigger Binding="{Binding IsMissing}" Value="True">
+                                    <Setter Property="Opacity" Value="0.55" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
                 </Border>
 
+                <!-- 管理模式：编辑/移除按钮 -->
                 <StackPanel Orientation="Horizontal"
                             HorizontalAlignment="Right"
                             VerticalAlignment="Top"
@@ -163,14 +430,22 @@
                             CommandParameter="{Binding}" />
                 </StackPanel>
 
-                <Button Background="Transparent"
+                <!-- 点击层 + 右键菜单 -->
+                <Button x:Name="ClickButton"
+                        Background="Transparent"
                         BorderThickness="0"
                         Cursor="Hand"
-                        ToolTip="{Binding TargetPath}"
                         IsHitTestVisible="{Binding DataContext.IsNotManaging, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                         Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                         Command="{Binding DataContext.OpenDetailCommand, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                         CommandParameter="{Binding}">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}">
+                                <ContentPresenter />
+                            </Border>
+                        </ControlTemplate>
+                    </Button.Template>
                     <Button.ContextMenu>
                         <ContextMenu DataContext="{Binding PlacementTarget.Tag, RelativeSource={RelativeSource Self}}">
                             <MenuItem Header="详情"
@@ -203,6 +478,169 @@
                     </Button.ContextMenu>
                 </Button>
             </Grid>
+
+            <!-- 悬停动效：亮度层 + 名称条淡入 + 胶囊放大（Style 触发器不允许 TargetName，故放这里） -->
+            <DataTemplate.Triggers>
+                <!-- 按压：卡片缩小 -->
+                <DataTrigger Binding="{Binding IsPressed, ElementName=ClickButton}"
+                             Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="GameCardScale"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="0.97"
+                                                 Duration="0:0:0.1" />
+                                <DoubleAnimation Storyboard.TargetName="GameCardScale"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="0.97"
+                                                 Duration="0:0:0.1" />
+                                <DoubleAnimation Storyboard.TargetName="OfficeCardScale"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="0.97"
+                                                 Duration="0:0:0.1" />
+                                <DoubleAnimation Storyboard.TargetName="OfficeCardScale"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="0.97"
+                                                 Duration="0:0:0.1" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="GameCardScale"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="1.03"
+                                                 Duration="0:0:0.1" />
+                                <DoubleAnimation Storyboard.TargetName="GameCardScale"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="1.03"
+                                                 Duration="0:0:0.1" />
+                                <DoubleAnimation Storyboard.TargetName="OfficeCardScale"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="1"
+                                                 Duration="0:0:0.1" />
+                                <DoubleAnimation Storyboard.TargetName="OfficeCardScale"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="1"
+                                                 Duration="0:0:0.1" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+
+                <!-- 点击：启动脉冲光环扩散 -->
+                <EventTrigger RoutedEvent="Button.Click"
+                              SourceName="ClickButton">
+                    <BeginStoryboard>
+                        <Storyboard>
+                            <DoubleAnimation Storyboard.TargetName="GamePulse"
+                                             Storyboard.TargetProperty="Opacity"
+                                             From="0.6"
+                                             To="0"
+                                             Duration="0:0:0.35" />
+                            <DoubleAnimation Storyboard.TargetName="GamePulseScale"
+                                             Storyboard.TargetProperty="ScaleX"
+                                             From="1"
+                                             To="1.12"
+                                             Duration="0:0:0.35">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="GamePulseScale"
+                                             Storyboard.TargetProperty="ScaleY"
+                                             From="1"
+                                             To="1.12"
+                                             Duration="0:0:0.35">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="OfficePulse"
+                                             Storyboard.TargetProperty="Opacity"
+                                             From="0.6"
+                                             To="0"
+                                             Duration="0:0:0.35" />
+                            <DoubleAnimation Storyboard.TargetName="OfficePulseScale"
+                                             Storyboard.TargetProperty="ScaleX"
+                                             From="1"
+                                             To="1.06"
+                                             Duration="0:0:0.35">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                            <DoubleAnimation Storyboard.TargetName="OfficePulseScale"
+                                             Storyboard.TargetProperty="ScaleY"
+                                             From="1"
+                                             To="1.06"
+                                             Duration="0:0:0.35">
+                                <DoubleAnimation.EasingFunction>
+                                    <CubicEase EasingMode="EaseOut" />
+                                </DoubleAnimation.EasingFunction>
+                            </DoubleAnimation>
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+
+                <DataTrigger Binding="{Binding IsMouseOver, ElementName=ClickButton}"
+                             Value="True">
+                    <DataTrigger.EnterActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="GameHoverGlow"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 To="0.08"
+                                                 Duration="0:0:0.2" />
+                                <DoubleAnimation Storyboard.TargetName="GameNameOverlay"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 To="1"
+                                                 Duration="0:0:0.2" />
+                                <DoubleAnimation Storyboard.TargetName="GameCardScale"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="1.03"
+                                                 Duration="0:0:0.2">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                                <DoubleAnimation Storyboard.TargetName="GameCardScale"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="1.03"
+                                                 Duration="0:0:0.2">
+                                    <DoubleAnimation.EasingFunction>
+                                        <CubicEase EasingMode="EaseOut" />
+                                    </DoubleAnimation.EasingFunction>
+                                </DoubleAnimation>
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.EnterActions>
+                    <DataTrigger.ExitActions>
+                        <BeginStoryboard>
+                            <Storyboard>
+                                <DoubleAnimation Storyboard.TargetName="GameHoverGlow"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 To="0"
+                                                 Duration="0:0:0.15" />
+                                <DoubleAnimation Storyboard.TargetName="GameNameOverlay"
+                                                 Storyboard.TargetProperty="Opacity"
+                                                 To="0"
+                                                 Duration="0:0:0.15" />
+                                <DoubleAnimation Storyboard.TargetName="GameCardScale"
+                                                 Storyboard.TargetProperty="ScaleX"
+                                                 To="1"
+                                                 Duration="0:0:0.15" />
+                                <DoubleAnimation Storyboard.TargetName="GameCardScale"
+                                                 Storyboard.TargetProperty="ScaleY"
+                                                 To="1"
+                                                 Duration="0:0:0.15" />
+                            </Storyboard>
+                        </BeginStoryboard>
+                    </DataTrigger.ExitActions>
+                </DataTrigger>
+            </DataTemplate.Triggers>
         </DataTemplate>
     </Application.Resources>
 </Application>

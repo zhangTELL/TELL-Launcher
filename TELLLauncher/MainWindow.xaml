@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:views="clr-namespace:TELLLauncher.Views"
+        xmlns:vm="clr-namespace:TELLLauncher.ViewModels"
         mc:Ignorable="d"
         Title="TELL 启动器"
         Width="1100"
@@ -22,8 +22,9 @@
             <RowDefinition Height="28" />
         </Grid.RowDefinitions>
 
+        <!-- 顶栏 -->
         <Border Grid.Row="0"
-                Background="White"
+                Background="{StaticResource SidebarBackgroundBrush}"
                 BorderBrush="{StaticResource CardBorderBrush}"
                 BorderThickness="0,0,0,1">
             <Grid Margin="20,0">
@@ -37,13 +38,13 @@
                             VerticalAlignment="Center">
                     <Border Width="32"
                             Height="32"
-                            CornerRadius="8"
-                            Background="#1F2937">
+                            CornerRadius="4"
+                            Background="{StaticResource AccentBrush}">
                         <TextBlock Text="T"
                                    HorizontalAlignment="Center"
                                    VerticalAlignment="Center"
                                    FontWeight="Bold"
-                                   Foreground="White" />
+                                   Foreground="#171D25" />
                     </Border>
                     <TextBlock Text="TELL 启动器"
                                Margin="10,0,0,0"
@@ -60,20 +61,22 @@
                       VerticalAlignment="Center">
                     <TextBox Padding="34,7,10,7"
                              VerticalAlignment="Center"
-                             BorderBrush="{StaticResource CardBorderBrush}"
-                             Background="#F9FAFB"
+                             BorderBrush="#3D4450"
+                             Background="#101822"
+                             Foreground="{StaticResource TextPrimaryBrush}"
+                             CaretBrush="{StaticResource TextPrimaryBrush}"
                              Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
                     <TextBlock Text="&#xE721;"
                                Margin="10,0,0,0"
                                VerticalAlignment="Center"
                                FontFamily="Segoe MDL2 Assets"
                                FontSize="14"
-                               Foreground="#9CA3AF"
+                               Foreground="{StaticResource TextSecondaryBrush}"
                                IsHitTestVisible="False" />
                     <TextBlock Text="搜索应用或游戏"
                                Margin="34,0,0,0"
                                VerticalAlignment="Center"
-                               Foreground="#9CA3AF"
+                               Foreground="{StaticResource TextSecondaryBrush}"
                                IsHitTestVisible="False"
                                Visibility="{Binding IsSearchEmpty, Converter={StaticResource BoolToVis}}" />
                 </Grid>
@@ -99,19 +102,242 @@
             </Grid>
         </Border>
 
-        <TabControl Grid.Row="1"
-                    Margin="0,8,0,0"
-                    Background="Transparent"
-                    BorderThickness="0"
-                    SelectedIndex="{Binding SelectedTabIndex}">
-            <TabItem Header="办公">
-                <views:OfficeView />
-            </TabItem>
-            <TabItem Header="游戏">
-                <views:GameView />
-            </TabItem>
-        </TabControl>
+        <!-- 主体：侧边栏 + 内容区 -->
+        <Grid Grid.Row="1">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="200" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
 
+            <!-- 侧边栏导航 -->
+            <Border Grid.Column="0"
+                    Background="{StaticResource SidebarBackgroundBrush}"
+                    BorderBrush="{StaticResource CardBorderBrush}"
+                    BorderThickness="0,0,1,0">
+                <StackPanel Margin="0,16,0,0">
+                    <TextBlock Text="办 公"
+                               Margin="20,0,0,6"
+                               FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+
+                    <Button Content="IDE"
+                            Command="{Binding SelectNavCommand}"
+                            CommandParameter="{x:Static vm:NavSection.Ide}">
+                        <Button.Style>
+                            <Style TargetType="Button"
+                                   BasedOn="{StaticResource NavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedNav}"
+                                                 Value="{x:Static vm:NavSection.Ide}">
+                                        <Setter Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="AI 工具"
+                            Command="{Binding SelectNavCommand}"
+                            CommandParameter="{x:Static vm:NavSection.AiTool}">
+                        <Button.Style>
+                            <Style TargetType="Button"
+                                   BasedOn="{StaticResource NavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedNav}"
+                                                 Value="{x:Static vm:NavSection.AiTool}">
+                                        <Setter Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+
+                    <TextBlock Text="游 戏"
+                               Margin="20,18,0,6"
+                               FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+
+                    <Button Content="全部游戏"
+                            Command="{Binding SelectNavCommand}"
+                            CommandParameter="{x:Static vm:NavSection.Game}">
+                        <Button.Style>
+                            <Style TargetType="Button"
+                                   BasedOn="{StaticResource NavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedNav}"
+                                                 Value="{x:Static vm:NavSection.Game}">
+                                        <Setter Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <Button Content="最近启动"
+                            Command="{Binding SelectNavCommand}"
+                            CommandParameter="{x:Static vm:NavSection.Recent}">
+                        <Button.Style>
+                            <Style TargetType="Button"
+                                   BasedOn="{StaticResource NavButton}">
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedNav}"
+                                                 Value="{x:Static vm:NavSection.Recent}">
+                                        <Setter Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                        <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                </StackPanel>
+            </Border>
+
+            <!-- 内容区 -->
+            <Grid Grid.Column="1">
+                <Grid.Style>
+                    <Style TargetType="Grid">
+                        <Style.Triggers>
+                            <!-- 切换导航时内容区淡入（Style 触发器不允许 TargetName，仅做透明度动画） -->
+                            <DataTrigger Binding="{Binding SelectedNav}"
+                                         Value="{x:Static vm:NavSection.Ide}">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                             From="0"
+                                                             To="1"
+                                                             Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SelectedNav}"
+                                         Value="{x:Static vm:NavSection.AiTool}">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                             From="0"
+                                                             To="1"
+                                                             Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SelectedNav}"
+                                         Value="{x:Static vm:NavSection.Game}">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                             From="0"
+                                                             To="1"
+                                                             Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding SelectedNav}"
+                                         Value="{x:Static vm:NavSection.Recent}">
+                                <DataTrigger.EnterActions>
+                                    <BeginStoryboard>
+                                        <Storyboard>
+                                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                                             From="0"
+                                                             To="1"
+                                                             Duration="0:0:0.15" />
+                                        </Storyboard>
+                                    </BeginStoryboard>
+                                </DataTrigger.EnterActions>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Grid.Style>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0"
+                            Orientation="Horizontal"
+                            Margin="24,18,24,0">
+                    <TextBlock x:Name="ContentTitleText"
+                               Text="{Binding ContentTitle}"
+                               FontSize="22"
+                               FontWeight="SemiBold" />
+                    <TextBlock Text="{Binding ContentSubtitle}"
+                               Margin="12,0,0,2"
+                               VerticalAlignment="Bottom"
+                               FontSize="12"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                </StackPanel>
+
+                <ScrollViewer Grid.Row="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ListBox x:Name="AppListBox"
+                             ItemsSource="{Binding CurrentApps}"
+                             Margin="16,10,16,24"
+                             Background="Transparent"
+                             BorderThickness="0"
+                             Padding="0"
+                             ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                             ScrollViewer.VerticalScrollBarVisibility="Disabled"
+                             AllowDrop="True"
+                             PreviewMouseLeftButtonDown="ListBox_PreviewMouseLeftButtonDown"
+                             PreviewMouseMove="ListBox_PreviewMouseMove"
+                             DragOver="ListBox_DragOver"
+                             Drop="ListBox_Drop">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemContainerStyle>
+                            <Style TargetType="ListBoxItem">
+                                <Setter Property="Background" Value="Transparent" />
+                                <Setter Property="BorderThickness" Value="0" />
+                                <Setter Property="Padding" Value="0" />
+                                <Setter Property="Margin" Value="0" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                <Style.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter Property="Background" Value="Transparent" />
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter Property="Background" Value="Transparent" />
+                                    </Trigger>
+                                </Style.Triggers>
+                            </Style>
+                        </ListBox.ItemContainerStyle>
+                    </ListBox>
+                </ScrollViewer>
+
+                <!-- 空状态 -->
+                <TextBlock Grid.Row="1"
+                           Text="这里还空空如也"
+                           HorizontalAlignment="Center"
+                           VerticalAlignment="Center"
+                           FontSize="15"
+                           Foreground="{StaticResource TextSecondaryBrush}">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Visibility" Value="Collapsed" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding CurrentApps.Count}"
+                                             Value="0">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Grid>
+        </Grid>
+
+        <!-- 通知条 -->
         <Border Grid.Row="1"
                 Margin="0,12,0,0"
                 Padding="16,9"
@@ -119,18 +345,19 @@
                 VerticalAlignment="Top"
                 Panel.ZIndex="10"
                 IsHitTestVisible="False"
-                Background="#FEF2F2"
-                BorderBrush="#FCA5A5"
+                Background="#3B1D1D"
+                BorderBrush="#B45309"
                 BorderThickness="1"
-                CornerRadius="8"
+                CornerRadius="4"
                 Visibility="{Binding HasNotification, Converter={StaticResource BoolToVis}}">
             <TextBlock Text="{Binding NotificationText}"
                        FontSize="13"
-                       Foreground="#991B1B" />
+                       Foreground="#FBBF24" />
         </Border>
 
+        <!-- 状态栏 -->
         <Border Grid.Row="2"
-                Background="#F9FAFB"
+                Background="{StaticResource SidebarBackgroundBrush}"
                 BorderBrush="{StaticResource CardBorderBrush}"
                 BorderThickness="0,1,0,0">
             <TextBlock Text="{Binding StatusText}"

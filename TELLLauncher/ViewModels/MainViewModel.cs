@@ -4,13 +4,25 @@ using TELLLauncher.Services;
 
 namespace TELLLauncher.ViewModels;
 
+/// <summary>侧边栏导航分区。</summary>
+public enum NavSection
+{
+    Ide,
+    AiTool,
+    Game,
+    Recent
+}
+
 public sealed class MainViewModel : ObservableObject
 {
     private readonly LauncherService _launcherService;
     private readonly IProcessLauncher _processLauncher;
+    private readonly CoverImageService? _coverImageService;
     private LauncherConfig _config = new();
-    private int _selectedTabIndex;
+    private NavSection _selectedNav = NavSection.Ide;
     private string _statusText = string.Empty;
+    private string _contentTitle = string.Empty;
+    private string _contentSubtitle = string.Empty;
     private string _notificationText = string.Empty;
     private string _searchText = string.Empty;
     private bool _hasNotification;
@@ -19,10 +31,12 @@ public sealed class MainViewModel : ObservableObject
 
     public MainViewModel(
         LauncherService launcherService,
-        IProcessLauncher? processLauncher = null)
+        IProcessLauncher? processLauncher = null,
+        CoverImageService? coverImageService = null)
     {
         _launcherService = launcherService;
         _processLauncher = processLauncher ?? new ProcessLauncher();
+        _coverImageService = coverImageService;
         LaunchCommand = new RelayCommand(parameter => Launch(parameter as AppItemViewModel));
         OpenDetailCommand = new RelayCommand(parameter =>
         {
@@ -50,6 +64,13 @@ public sealed class MainViewModel : ObservableObject
             parameter => MoveUp(parameter as AppItemViewModel));
         MoveDownCommand = new RelayCommand(
             parameter => MoveDown(parameter as AppItemViewModel));
+        SelectNavCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is NavSection nav)
+            {
+                SelectedNav = nav;
+            }
+        });
     }
 
     public event Action<AppItemViewModel>? EditRequested;
@@ -64,12 +85,34 @@ public sealed class MainViewModel : ObservableObject
 
     public ObservableCollection<AppItemViewModel> GameApps { get; } = new();
 
+    public ObservableCollection<AppItemViewModel> RecentApps { get; } = new();
+
+    public ObservableCollection<AppItemViewModel> CurrentApps { get; } = new();
+
     public ObservableCollection<AppItemViewModel> SearchResults { get; } = new();
 
-    public int SelectedTabIndex
+    public NavSection SelectedNav
     {
-        get => _selectedTabIndex;
-        set => SetProperty(ref _selectedTabIndex, value);
+        get => _selectedNav;
+        set
+        {
+            if (SetProperty(ref _selectedNav, value))
+            {
+                ApplyNavSelection();
+            }
+        }
+    }
+
+    public string ContentTitle
+    {
+        get => _contentTitle;
+        private set => SetProperty(ref _contentTitle, value);
+    }
+
+    public string ContentSubtitle
+    {
+        get => _contentSubtitle;
+        private set => SetProperty(ref _contentSubtitle, value);
     }
 
     public string StatusText
@@ -151,6 +194,8 @@ public sealed class MainViewModel : ObservableObject
 
     public RelayCommand MoveDownCommand { get; }
 
+    public RelayCommand SelectNavCommand { get; }
+
     public async Task LoadAsync()
     {
         _config = await _launcherService.LoadOrCreateAsync();
@@ -203,6 +248,12 @@ public sealed class MainViewModel : ObservableObject
         }
 
         Save();
+
+        // 启动后刷新"最近启动"分区
+        if (SelectedNav == NavSection.Recent)
+        {
+            RefreshCollections();
+        }
     }
 
     public void ClearNotification()
@@ -381,46 +432,84 @@ public sealed class MainViewModel : ObservableObject
         IdeApps.Clear();
         AiToolApps.Clear();
         GameApps.Clear();
+        RecentApps.Clear();
         SearchResults.Clear();
+        CurrentApps.Clear();
 
         if (isSearching)
         {
-            var officeMatches = GetVisibleApps(AppGroup.Ide)
+            var matches = GetVisibleApps(AppGroup.Ide)
                 .Concat(GetVisibleApps(AppGroup.AiTool))
+                .Concat(GetVisibleApps(AppGroup.Game))
                 .Where(app => MatchesSearch(app, searchText))
-                .OrderBy(app => app.Order);
+                .OrderBy(app => app.Order)
+                .ToList();
 
-            foreach (var app in officeMatches)
+            foreach (var app in matches)
             {
-                SearchResults.Add(new AppItemViewModel(app));
+                SearchResults.Add(new AppItemViewModel(app, _coverImageService));
+                CurrentApps.Add(new AppItemViewModel(app, _coverImageService));
             }
 
-            foreach (var app in GetVisibleApps(AppGroup.Game)
-                         .Where(app => MatchesSearch(app, searchText)))
-            {
-                GameApps.Add(new AppItemViewModel(app));
-            }
-
-            StatusText = $"搜索结果 {SearchResults.Count + GameApps.Count} 个";
+            ContentTitle = "搜索结果";
+            ContentSubtitle = $"{matches.Count} 个";
+            StatusText = $"搜索结果 {matches.Count} 个";
             return;
         }
 
         foreach (var app in GetVisibleApps(AppGroup.Ide))
         {
-            IdeApps.Add(new AppItemViewModel(app));
+            IdeApps.Add(new AppItemViewModel(app, _coverImageService));
         }
 
         foreach (var app in GetVisibleApps(AppGroup.AiTool))
         {
-            AiToolApps.Add(new AppItemViewModel(app));
+            AiToolApps.Add(new AppItemViewModel(app, _coverImageService));
         }
 
         foreach (var app in GetVisibleApps(AppGroup.Game))
         {
-            GameApps.Add(new AppItemViewModel(app));
+            GameApps.Add(new AppItemViewModel(app, _coverImageService));
+        }
+
+        foreach (var app in _config.Apps
+                     .Where(app => !app.IsHidden && app.LastLaunchedAt is not null)
+                     .OrderByDescending(app => app.LastLaunchedAt)
+                     .Take(10))
+        {
+            RecentApps.Add(new AppItemViewModel(app, _coverImageService));
         }
 
         StatusText = $"办公 {IdeApps.Count + AiToolApps.Count} 个 · 游戏 {GameApps.Count} 个";
+        ApplyNavSelection();
+    }
+
+    private void ApplyNavSelection()
+    {
+        if (IsSearching)
+        {
+            return;
+        }
+
+        CurrentApps.Clear();
+
+        var (source, title) = SelectedNav switch
+        {
+            NavSection.AiTool => (AiToolApps, "AI 工具"),
+            NavSection.Game => (GameApps, "游戏"),
+            NavSection.Recent => (RecentApps, "最近启动"),
+            _ => (IdeApps, "IDE")
+        };
+
+        foreach (var app in source)
+        {
+            CurrentApps.Add(app);
+        }
+
+        ContentTitle = title;
+        ContentSubtitle = SelectedNav == NavSection.Recent
+            ? (source.Count == 0 ? "还没有启动记录" : $"{source.Count} 个")
+            : $"{source.Count} 个";
     }
 
     private static bool MatchesSearch(AppEntry app, string searchText)

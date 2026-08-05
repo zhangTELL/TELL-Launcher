@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.IO;
 using System.Windows;
 using TELLLauncher.Services;
 using TELLLauncher.ViewModels;
@@ -29,8 +30,13 @@ public partial class SteamLibraryWindow : Window
     private async Task RefreshAsync()
     {
         var games = await Task.Run(() => _service.ScanInstalledGames());
+        var coverDirectory = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "TELL Launcher",
+            "covers");
+        var coverService = new CoverImageService(coverDirectory);
         GameList.ItemsSource = games
-            .Select(game => new SteamGameItemViewModel(game))
+            .Select(game => new SteamGameItemViewModel(game, coverService))
             .ToList();
         CountText.Text = $"已安装 {games.Count} 个游戏";
         EmptyText.Visibility = games.Count == 0

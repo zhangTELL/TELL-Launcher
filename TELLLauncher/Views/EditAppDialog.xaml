@@ -6,10 +6,10 @@
         SizeToContent="Height"
         ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner"
-        Background="White"
+        Background="{StaticResource WindowBackgroundBrush}"
         FontFamily="Segoe UI"
         FontSize="13"
-        Foreground="#1F2937">
+        Foreground="{StaticResource TextPrimaryBrush}">
     <Grid Margin="24">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -31,7 +31,7 @@
                  x:Name="NameTextBox"
                  Padding="8,6"
                  Margin="0,0,0,14"
-                 BorderBrush="#E5E7EB" />
+                 Style="{StaticResource DarkTextBox}" />
 
         <TextBlock Grid.Row="2"
                    Text="程序路径"
@@ -45,10 +45,11 @@
             <TextBox x:Name="PathTextBox"
                      Padding="8,6"
                      Margin="0,0,8,0"
-                     BorderBrush="#E5E7EB" />
+                     Style="{StaticResource DarkTextBox}" />
             <Button Grid.Column="1"
                     Content="浏览"
                     Padding="12,6"
+                    Style="{StaticResource DarkDialogButton}"
                     Click="BrowseButton_Click" />
         </Grid>
 
@@ -64,10 +65,11 @@
             <TextBox x:Name="DetailImageTextBox"
                      Padding="8,6"
                      Margin="0,0,8,0"
-                     BorderBrush="#E5E7EB" />
+                     Style="{StaticResource DarkTextBox}" />
             <Button Grid.Column="1"
                     Content="选择图片"
                     Padding="12,6"
+                    Style="{StaticResource DarkDialogButton}"
                     Click="BrowseImageButton_Click" />
         </Grid>
 
@@ -82,7 +84,7 @@
                  AcceptsReturn="True"
                  TextWrapping="Wrap"
                  VerticalScrollBarVisibility="Auto"
-                 BorderBrush="#E5E7EB" />
+                 Style="{StaticResource DarkTextBox}" />
 
         <Grid Grid.Row="8"
               Margin="0,18,0,0">
@@ -97,7 +99,10 @@
                 <ComboBox x:Name="GroupComboBox"
                           Width="180"
                           Padding="8,5"
-                          HorizontalAlignment="Left" />
+                          HorizontalAlignment="Left"
+                          Background="#101822"
+                          Foreground="#FFFFFF"
+                          BorderBrush="#3D4450" />
             </StackPanel>
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"
@@ -106,11 +111,13 @@
                         Width="80"
                         Padding="0,7"
                         Margin="0,0,8,0"
+                        Style="{StaticResource DarkDialogButton}"
                         Click="CancelButton_Click" />
                 <Button Content="确定"
                         Width="80"
                         Padding="0,7"
                         IsDefault="True"
+                        Style="{StaticResource DarkDialogButton}"
                         Click="OkButton_Click" />
             </StackPanel>
         </Grid>

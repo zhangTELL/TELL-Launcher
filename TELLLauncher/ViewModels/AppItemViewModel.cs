@@ -8,11 +8,17 @@ namespace TELLLauncher.ViewModels;
 
 public sealed class AppItemViewModel : ObservableObject
 {
-    public AppItemViewModel(AppEntry model)
+    private readonly CoverImageService? _coverImageService;
+    private ImageSource? _capsuleImage;
+    private bool _capsuleLoadStarted;
+
+    public AppItemViewModel(AppEntry model, CoverImageService? coverImageService = null)
     {
         Model = model;
+        _coverImageService = coverImageService;
         Icon = IconService.LoadIcon(model.IconPath ?? model.TargetPath);
         LargeIcon = IconService.LoadLargeIcon(model.IconPath ?? model.TargetPath);
+        _ = LoadCapsuleAsync();
     }
 
     public AppEntry Model { get; }
@@ -29,11 +35,72 @@ public sealed class AppItemViewModel : ObservableObject
 
     public ImageSource? LargeIcon { get; private set; }
 
+    public bool IsGame => Model.Group == AppGroup.Game;
+
+    public bool IsOffice => !IsGame;
+
+    public string? SteamAppId => CoverImageService.ExtractSteamAppId(Model.TargetPath);
+
+    public ImageSource? CapsuleImage
+    {
+        get => _capsuleImage;
+        private set => SetProperty(ref _capsuleImage, value);
+    }
+
+    public bool HasCapsuleImage => CapsuleImage is not null;
+
+    public bool HasNoCapsuleImage => CapsuleImage is null;
+
+    public async Task LoadCapsuleAsync()
+    {
+        if (_capsuleLoadStarted)
+        {
+            return;
+        }
+
+        _capsuleLoadStarted = true;
+
+        if (_coverImageService is null)
+        {
+            return;
+        }
+
+        var appId = SteamAppId;
+        if (appId is null)
+        {
+            return;
+        }
+
+        var path = await _coverImageService.GetCapsulePathAsync(appId);
+        if (path is null || !File.Exists(path))
+        {
+            return;
+        }
+
+        try
+        {
+            var image = new BitmapImage();
+            image.BeginInit();
+            image.CacheOption = BitmapCacheOption.OnLoad;
+            image.UriSource = new Uri(path);
+            image.EndInit();
+            image.Freeze();
+            CapsuleImage = image;
+            OnPropertyChanged(nameof(HasCapsuleImage));
+            OnPropertyChanged(nameof(HasNoCapsuleImage));
+        }
+        catch
+        {
+            // 封面文件损坏时回退到大图标显示
+        }
+    }
+
     public bool HasIcon => Icon is not null;
 
     public bool HasNoIcon => Icon is null;
 
-    public bool IsMissing => string.IsNullOrWhiteSpace(TargetPath) || !File.Exists(TargetPath);
+    public bool IsMissing => string.IsNullOrWhiteSpace(TargetPath) ||
+        (!ProcessLauncher.IsUriTarget(TargetPath) && !File.Exists(TargetPath));
 
     public bool IsResolved => !IsMissing;
 
@@ -85,6 +152,8 @@ public sealed class AppItemViewModel : ObservableObject
     {
         Icon = IconService.LoadIcon(Model.IconPath ?? Model.TargetPath);
         LargeIcon = IconService.LoadLargeIcon(Model.IconPath ?? Model.TargetPath);
+        _capsuleLoadStarted = false;
+        _ = LoadCapsuleAsync();
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(TargetPath));
         OnPropertyChanged(nameof(Initial));
@@ -95,6 +164,9 @@ public sealed class AppItemViewModel : ObservableObject
         OnPropertyChanged(nameof(IsMissing));
         OnPropertyChanged(nameof(IsResolved));
         OnPropertyChanged(nameof(IsSteamLibrary));
+        OnPropertyChanged(nameof(IsGame));
+        OnPropertyChanged(nameof(IsOffice));
+        OnPropertyChanged(nameof(SteamAppId));
         OnPropertyChanged(nameof(DetailImagePath));
         OnPropertyChanged(nameof(DetailImageSource));
         OnPropertyChanged(nameof(Details));
