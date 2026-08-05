@@ -28,6 +28,8 @@ public partial class EditAppDialog : Window
         {
             GroupPanel.Visibility = Visibility.Collapsed;
         }
+
+        WindowHelper.EnableDarkTitleBar(this);
     }
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)

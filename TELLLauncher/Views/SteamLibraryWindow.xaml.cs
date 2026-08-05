@@ -14,6 +14,7 @@ public partial class SteamLibraryWindow : Window
     {
         InitializeComponent();
         _service = service ?? new SteamLibraryService();
+        WindowHelper.EnableDarkTitleBar(this);
         Loaded += OnLoaded;
     }
 

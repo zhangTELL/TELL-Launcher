@@ -10,7 +10,9 @@ foreach ($s in $sizes) {
     $g.TextRenderingHint = [System.Drawing.Text.TextRenderingHint]::AntiAlias
     $g.Clear([System.Drawing.Color]::Transparent)
 
-    # 圆角方形底（Accent 蓝）
+    $u = [float]$s / 100.0   # 单位刻度，100x100 逻辑坐标系
+
+    # ---------- 圆角方形底（Accent 蓝） ----------
     $d = [int]($s * 0.44)
     $path = New-Object System.Drawing.Drawing2D.GraphicsPath
     $path.AddArc(0, 0, $d, $d, 180, 90)
@@ -18,28 +20,107 @@ foreach ($s in $sizes) {
     $path.AddArc($s - $d, $s - $d, $d, $d, 0, 90)
     $path.AddArc(0, $s - $d, $d, $d, 90, 90)
     $path.CloseFigure()
-    $brush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(0x66, 0xC0, 0xF4))
-    $g.FillPath($brush, $path)
+    $bgBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(0x66, 0xC0, 0xF4))
+    $g.FillPath($bgBrush, $path)
 
-    # 字母 T（深色）
-    $font = New-Object System.Drawing.Font("Segoe UI", [float]($s * 0.52),
-        [System.Drawing.FontStyle]::Bold, [System.Drawing.GraphicsUnit]::Pixel)
-    $textBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(0x17, 0x1D, 0x25))
-    $sf = New-Object System.Drawing.StringFormat
-    $sf.Alignment = [System.Drawing.StringAlignment]::Center
-    $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
-    $layout = New-Object System.Drawing.RectangleF 0, 0, $s, $s
-    $g.DrawString("T", $font, $textBrush, $layout, $sf)
+    # ---------- 火箭（深色） ----------
+    $rocketColor = [System.Drawing.Color]::FromArgb(0x17, 0x1D, 0x25)
+    $bodyBrush = New-Object System.Drawing.SolidBrush $rocketColor
 
+    $g.TranslateTransform([float]($s / 2), [float]($s / 2))
+    $g.RotateTransform(-45)
+    $g.TranslateTransform([float](-$s / 2), [float](-$s / 2))
+
+    # 机身：圆角矩形，居中偏上
+    $bodyW = 16 * $u
+    $bodyH = 42 * $u
+    $bodyX = ($s - $bodyW) / 2
+    $bodyY = $s * 0.22
+    $bodyRadius = 8 * $u
+    $bodyPath = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $bodyPath.AddArc($bodyX, $bodyY, $bodyRadius * 2, $bodyRadius * 2, 180, 90)
+    $bodyPath.AddArc($bodyX + $bodyW - $bodyRadius * 2, $bodyY, $bodyRadius * 2, $bodyRadius * 2, 270, 90)
+    $bodyPath.AddArc($bodyX + $bodyW - $bodyRadius * 2, $bodyY + $bodyH - $bodyRadius * 2, $bodyRadius * 2, $bodyRadius * 2, 0, 90)
+    $bodyPath.AddArc($bodyX, $bodyY + $bodyH - $bodyRadius * 2, $bodyRadius * 2, $bodyRadius * 2, 90, 90)
+    $bodyPath.CloseFigure()
+    $g.FillPath($bodyBrush, $bodyPath)
+
+    # 机头：三角形
+    $noseBase = $bodyY + 4 * $u
+    $noseTipY = $bodyY - 14 * $u
+    $noseHalfW = $bodyW / 2
+    $nosePath = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $nosePath.AddLine(
+        [float]($s / 2), [float]$noseTipY,
+        [float](($s + $bodyW) / 2), [float]$noseBase)
+    $nosePath.AddLine(
+        [float](($s + $bodyW) / 2), [float]$noseBase,
+        [float](($s - $bodyW) / 2), [float]$noseBase)
+    $nosePath.CloseFigure()
+    $g.FillPath($bodyBrush, $nosePath)
+
+    # 左侧尾翼
+    $finW = 10 * $u
+    $finH = 14 * $u
+    $finY = $bodyY + $bodyH - $finH - 2 * $u
+    $finPath = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $finPath.AddLine(
+        [float](($s - $bodyW) / 2), [float]$finY,
+        [float](($s - $bodyW) / 2 - $finW), [float]($finY + $finH))
+    $finPath.AddLine(
+        [float](($s - $bodyW) / 2 - $finW), [float]($finY + $finH),
+        [float](($s - $bodyW) / 2), [float]($finY + $finH))
+    $finPath.CloseFigure()
+    $g.FillPath($bodyBrush, $finPath)
+
+    # 右侧尾翼
+    $finPath2 = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $finPath2.AddLine(
+        [float](($s + $bodyW) / 2), [float]$finY,
+        [float](($s + $bodyW) / 2 + $finW), [float]($finY + $finH))
+    $finPath2.AddLine(
+        [float](($s + $bodyW) / 2 + $finW), [float]($finY + $finH),
+        [float](($s + $bodyW) / 2), [float]($finY + $finH))
+    $finPath2.CloseFigure()
+    $g.FillPath($bodyBrush, $finPath2)
+
+    # 尾焰：小三角形
+    $flameW = 8 * $u
+    $flameH = 14 * $u
+    $flameY = $bodyY + $bodyH + 2 * $u
+    $flamePath = New-Object System.Drawing.Drawing2D.GraphicsPath
+    $flamePath.AddLine(
+        [float]($s / 2 - $flameW / 2), [float]$flameY,
+        [float]($s / 2), [float]($flameY + $flameH))
+    $flamePath.AddLine(
+        [float]($s / 2), [float]($flameY + $flameH),
+        [float]($s / 2 + $flameW / 2), [float]$flameY)
+    $flamePath.CloseFigure()
+    $g.FillPath($bodyBrush, $flamePath)
+
+    # 舷窗：小圆（用白色透出底色）
+    $winR = 4 * $u
+    $winY = $bodyY + $bodyH * 0.28
+    $winBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(0x66, 0xC0, 0xF4))
+    $g.FillEllipse($winBrush, [float]($s / 2 - $winR), [float]$winY, [float]($winR * 2), [float]($winR * 2))
+
+    $g.ResetTransform()
+
+    # ---------- 打包 ICO ----------
     $ms = New-Object System.IO.MemoryStream
     $bmp.Save($ms, [System.Drawing.Imaging.ImageFormat]::Png)
     $images += ,@{ size = $s; bytes = $ms.ToArray() }
 
-    $ms.Dispose(); $font.Dispose(); $brush.Dispose(); $textBrush.Dispose()
-    $path.Dispose(); $g.Dispose(); $bmp.Dispose()
+    # 256 尺寸单独存为 PNG（供 WPF 直接使用）
+    if ($s -eq 256) {
+        $bmp.Save("TELLLauncher\app.png", [System.Drawing.Imaging.ImageFormat]::Png)
+    }
+
+    $ms.Dispose(); $bodyBrush.Dispose(); $bgBrush.Dispose(); $winBrush.Dispose()
+    $bodyPath.Dispose(); $nosePath.Dispose(); $finPath.Dispose(); $finPath2.Dispose()
+    $flamePath.Dispose(); $path.Dispose(); $g.Dispose(); $bmp.Dispose()
 }
 
-# 打包 ICO（PNG 压缩条目，Vista+ 支持）
 $outPath = $args[0]
 $fs = [System.IO.File]::Create($outPath)
 $bw = New-Object System.IO.BinaryWriter $fs

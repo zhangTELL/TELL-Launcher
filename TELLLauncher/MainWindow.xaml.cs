@@ -45,6 +45,8 @@ public partial class MainWindow : Window
         _viewModel.LocateRequested += OnEditRequested;
         _viewModel.OpenDetailRequested += OnOpenDetailRequested;
 
+        WindowHelper.EnableDarkTitleBar(this);
+
         Loaded += OnLoaded;
         Closed += OnClosed;
     }
@@ -157,6 +159,67 @@ public partial class MainWindow : Window
     }
 
     // ============ 拖拽排序（原 GameView/OfficeView 逻辑，侧边栏重构后收拢到主窗口） ============
+
+    private ScrollViewer? _scrollViewer;
+    private double _scrollTarget;
+    private DispatcherTimer? _scrollTimer;
+
+    private void ListBox_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+    {
+        if (sender is not ListBox listBox)
+        {
+            return;
+        }
+
+        var scrollViewer = FindAncestor<ScrollViewer>(listBox);
+        if (scrollViewer is null)
+        {
+            return;
+        }
+
+        if (_scrollViewer != scrollViewer)
+        {
+            _scrollViewer = scrollViewer;
+            _scrollTarget = scrollViewer.VerticalOffset;
+            _scrollTimer?.Stop();
+        }
+
+        _scrollTarget = Math.Max(0,
+            Math.Min(scrollViewer.ScrollableHeight,
+                     _scrollTarget - e.Delta));
+
+        if (_scrollTimer is null)
+        {
+            _scrollTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(16)
+            };
+            _scrollTimer.Tick += OnScrollTick;
+        }
+
+        _scrollTimer.Start();
+        e.Handled = true;
+    }
+
+    private void OnScrollTick(object? sender, EventArgs e)
+    {
+        if (_scrollViewer is null)
+        {
+            _scrollTimer?.Stop();
+            return;
+        }
+
+        var diff = _scrollTarget - _scrollViewer.VerticalOffset;
+        if (Math.Abs(diff) < 0.5)
+        {
+            _scrollViewer.ScrollToVerticalOffset(_scrollTarget);
+            _scrollTimer?.Stop();
+            return;
+        }
+
+        _scrollViewer.ScrollToVerticalOffset(
+            _scrollViewer.VerticalOffset + diff * 0.2);
+    }
 
     private Point _dragStartPoint;
 

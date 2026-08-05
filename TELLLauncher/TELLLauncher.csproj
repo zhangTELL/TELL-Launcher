@@ -7,9 +7,14 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <ApplicationIcon>app.ico</ApplicationIcon>
+    <AssemblyName>TELL Launcher</AssemblyName>
+    <Product>TELL Launcher</Product>
+    <Title>TELL Launcher</Title>
   </PropertyGroup>
 
   <ItemGroup>
+    <Resource Include="app.ico" />
+    <Resource Include="app.png" />
     <PackageReference Include="System.Drawing.Common" Version="8.0.0" />
   </ItemGroup>
 

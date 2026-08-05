@@ -5,7 +5,7 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:vm="clr-namespace:TELLLauncher.ViewModels"
         mc:Ignorable="d"
-        Title="TELL 启动器"
+        Title="TELL Launcher"
         Width="1100"
         Height="700"
         MinWidth="900"
@@ -39,14 +39,13 @@
                     <Border Width="32"
                             Height="32"
                             CornerRadius="4"
-                            Background="{StaticResource AccentBrush}">
-                        <TextBlock Text="T"
-                                   HorizontalAlignment="Center"
-                                   VerticalAlignment="Center"
-                                   FontWeight="Bold"
-                                   Foreground="#171D25" />
+                            Background="Transparent">
+                        <Image Source="pack://application:,,,/app.png"
+                               Width="32"
+                               Height="32"
+                               Stretch="Uniform" />
                     </Border>
-                    <TextBlock Text="TELL 启动器"
+                    <TextBlock Text="TELL Launcher"
                                Margin="10,0,0,0"
                                VerticalAlignment="Center"
                                FontSize="17"
@@ -84,20 +83,39 @@
                 <StackPanel Grid.Column="2"
                             Orientation="Horizontal"
                             VerticalAlignment="Center">
-                    <Button Content="&#xE72C;"
-                            Style="{StaticResource IconButton}"
-                            ToolTip="刷新桌面游戏"
-                            Click="RefreshButton_Click" />
-                    <Button Content="&#xE710;"
-                            Margin="8,0,0,0"
-                            Style="{StaticResource IconButton}"
-                            ToolTip="添加应用"
-                            Click="AddButton_Click" />
-                    <Button Content="&#xE713;"
-                            Margin="8,0,0,0"
-                            Style="{StaticResource IconButton}"
-                            ToolTip="管理"
-                            Click="ManageButton_Click" />
+                    <!-- 普通模式：刷新/添加/管理 -->
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsNotManaging, Converter={StaticResource BoolToVis}}">
+                        <Button Content="&#xE72C;"
+                                Style="{StaticResource IconButton}"
+                                ToolTip="刷新桌面游戏"
+                                Click="RefreshButton_Click" />
+                        <Button Content="&#xE710;"
+                                Margin="8,0,0,0"
+                                Style="{StaticResource IconButton}"
+                                ToolTip="添加应用"
+                                Click="AddButton_Click" />
+                        <Button Content="&#xE713;"
+                                Margin="8,0,0,0"
+                                Style="{StaticResource IconButton}"
+                                ToolTip="管理"
+                                Click="ManageButton_Click" />
+                    </StackPanel>
+                    <!-- 管理模式：取消/确定 -->
+                    <StackPanel Orientation="Horizontal"
+                                Visibility="{Binding IsManaging, Converter={StaticResource BoolToVis}}">
+                        <Button Content="取消"
+                                Width="72"
+                                Padding="0,7"
+                                Style="{StaticResource DarkDialogButton}"
+                                Click="ManageButton_Click" />
+                        <Button Content="确定"
+                                Width="72"
+                                Padding="0,7"
+                                Margin="8,0,0,0"
+                                Style="{StaticResource DarkDialogButton}"
+                                Click="ManageButton_Click" />
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>
@@ -174,6 +192,12 @@
                             </Style>
                         </Button.Style>
                     </Button>
+
+                    <TextBlock Text="最 近"
+                               Margin="20,18,0,6"
+                               FontSize="11"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+
                     <Button Content="最近启动"
                             Command="{Binding SelectNavCommand}"
                             CommandParameter="{x:Static vm:NavSection.Recent}">
@@ -287,6 +311,7 @@
                              AllowDrop="True"
                              PreviewMouseLeftButtonDown="ListBox_PreviewMouseLeftButtonDown"
                              PreviewMouseMove="ListBox_PreviewMouseMove"
+                             PreviewMouseWheel="ListBox_PreviewMouseWheel"
                              DragOver="ListBox_DragOver"
                              Drop="ListBox_Drop">
                         <ListBox.ItemsPanel>

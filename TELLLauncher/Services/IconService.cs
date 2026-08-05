@@ -13,15 +13,25 @@ public static class IconService
             return null;
         }
 
+        var iconPath = path;
+        if (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+        {
+            var target = ShortcutScanner.ResolveShortcutTarget(path);
+            if (!string.IsNullOrWhiteSpace(target) && File.Exists(target))
+            {
+                iconPath = target;
+            }
+        }
+
         try
         {
-            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(path);
+            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(iconPath);
             if (icon is null)
             {
                 return null;
             }
 
-            return ConvertToImageSource(icon, 32);
+            return ConvertToImageSource(icon, 48);
         }
         catch
         {
@@ -36,10 +46,21 @@ public static class IconService
             return null;
         }
 
+        // 解析 .lnk 到目标文件，从目标提取大图标
+        var iconPath = path;
+        if (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+        {
+            var target = ShortcutScanner.ResolveShortcutTarget(path);
+            if (!string.IsNullOrWhiteSpace(target) && File.Exists(target))
+            {
+                iconPath = target;
+            }
+        }
+
         try
         {
             // 尝试提取 256x256 的大图标资源（仅对 exe/dll 有效）
-            using var icon = new System.Drawing.Icon(path, 256, 256);
+            using var icon = new System.Drawing.Icon(iconPath, 256, 256);
             if (icon is not null)
             {
                 return ConvertToImageSource(icon, 256);

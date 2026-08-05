@@ -21,6 +21,7 @@ public partial class AppDetailWindow : Window
         _item = item;
         _processLauncher = processLauncher ?? new ProcessLauncher();
         DataContext = item;
+        WindowHelper.EnableDarkTitleBar(this);
     }
 
     private void LaunchButton_Click(object sender, RoutedEventArgs e)
