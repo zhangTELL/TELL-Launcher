@@ -37,6 +37,7 @@ public partial class MainWindow : Window
         _viewModel.PropertyChanged += OnViewModelPropertyChanged;
         _viewModel.EditRequested += OnEditRequested;
         _viewModel.LocateRequested += OnEditRequested;
+        _viewModel.OpenDetailRequested += OnOpenDetailRequested;
 
         Loaded += OnLoaded;
         Closed += OnClosed;
@@ -90,6 +91,8 @@ public partial class MainWindow : Window
             Name = model.Name,
             TargetPath = model.TargetPath,
             IconPath = model.IconPath,
+            DetailImagePath = model.DetailImagePath,
+            Details = model.Details,
             Group = model.Group,
             Order = model.Order,
             IsHidden = model.IsHidden,
@@ -105,6 +108,15 @@ public partial class MainWindow : Window
         {
             _viewModel.UpdateApp(item, draft);
         }
+    }
+
+    private void OnOpenDetailRequested(AppItemViewModel item)
+    {
+        var detailWindow = new AppDetailWindow(_viewModel, item)
+        {
+            Owner = this
+        };
+        detailWindow.ShowDialog();
     }
 
     private void OnViewModelPropertyChanged(

@@ -24,6 +24,13 @@ public sealed class MainViewModel : ObservableObject
         _launcherService = launcherService;
         _processLauncher = processLauncher ?? new ProcessLauncher();
         LaunchCommand = new RelayCommand(parameter => Launch(parameter as AppItemViewModel));
+        OpenDetailCommand = new RelayCommand(parameter =>
+        {
+            if (parameter is AppItemViewModel item)
+            {
+                OpenDetailRequested?.Invoke(item);
+            }
+        });
         EditCommand = new RelayCommand(parameter =>
         {
             if (parameter is AppItemViewModel item)
@@ -48,6 +55,8 @@ public sealed class MainViewModel : ObservableObject
     public event Action<AppItemViewModel>? EditRequested;
 
     public event Action<AppItemViewModel>? LocateRequested;
+
+    public event Action<AppItemViewModel>? OpenDetailRequested;
 
     public ObservableCollection<AppItemViewModel> IdeApps { get; } = new();
 
@@ -76,10 +85,13 @@ public sealed class MainViewModel : ObservableObject
         {
             if (SetProperty(ref _searchText, value))
             {
+                OnPropertyChanged(nameof(IsSearchEmpty));
                 RefreshCollections();
             }
         }
     }
+
+    public bool IsSearchEmpty => string.IsNullOrWhiteSpace(SearchText);
 
     public bool IsSearching
     {
@@ -122,6 +134,8 @@ public sealed class MainViewModel : ObservableObject
     }
 
     public RelayCommand LaunchCommand { get; }
+
+    public RelayCommand OpenDetailCommand { get; }
 
     public RelayCommand EditCommand { get; }
 
@@ -213,6 +227,8 @@ public sealed class MainViewModel : ObservableObject
         model.Name = draft.Name;
         model.TargetPath = draft.TargetPath;
         model.IconPath = draft.IconPath;
+        model.DetailImagePath = draft.DetailImagePath;
+        model.Details = draft.Details;
         model.IsManual = draft.IsManual || model.IsManual;
 
         if (model.Group != draft.Group)

@@ -13,6 +13,8 @@
                  Background="Transparent"
                  BorderThickness="0"
                  Padding="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Disabled"
                  AllowDrop="True"
                  PreviewMouseLeftButtonDown="ListBox_PreviewMouseLeftButtonDown"
                  PreviewMouseMove="ListBox_PreviewMouseMove"

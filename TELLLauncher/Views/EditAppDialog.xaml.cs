@@ -16,6 +16,8 @@ public partial class EditAppDialog : Window
 
         NameTextBox.Text = draft.Name;
         PathTextBox.Text = draft.TargetPath ?? string.Empty;
+        DetailImageTextBox.Text = draft.DetailImagePath ?? string.Empty;
+        DetailsTextBox.Text = draft.Details ?? string.Empty;
         GroupComboBox.ItemsSource = new[] { "IDE", "AI 工具", "游戏" };
         GroupComboBox.SelectedIndex = (int)draft.Group;
     }
@@ -34,6 +36,20 @@ public partial class EditAppDialog : Window
         }
     }
 
+    private void BrowseImageButton_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Title = "选择页面图片",
+            Filter = "图片文件 (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif|所有文件 (*.*)|*.*"
+        };
+
+        if (dialog.ShowDialog(this) == true)
+        {
+            DetailImageTextBox.Text = dialog.FileName;
+        }
+    }
+
     private void OkButton_Click(object sender, RoutedEventArgs e)
     {
         if (GroupComboBox.SelectedIndex < 0)
@@ -46,6 +62,8 @@ public partial class EditAppDialog : Window
         _draft.IconPath = string.IsNullOrWhiteSpace(_draft.TargetPath)
             ? _draft.IconPath
             : _draft.TargetPath;
+        _draft.DetailImagePath = DetailImageTextBox.Text.Trim();
+        _draft.Details = DetailsTextBox.Text.Trim();
         _draft.Group = (AppGroup)GroupComboBox.SelectedIndex;
         DialogResult = true;
     }

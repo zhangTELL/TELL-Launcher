@@ -40,6 +40,8 @@ public class ConfigStoreTests
             {
                 Name = "Test App",
                 TargetPath = @"C:\Tools\Test.exe",
+                DetailImagePath = @"C:\Images\Test.png",
+                Details = "自定义详情",
                 Group = AppGroup.Ide,
                 Order = 2,
                 IsManual = true
@@ -51,6 +53,8 @@ public class ConfigStoreTests
 
             Assert.Equal("Test App", entry.Name);
             Assert.Equal(@"C:\Tools\Test.exe", entry.TargetPath);
+            Assert.Equal(@"C:\Images\Test.png", entry.DetailImagePath);
+            Assert.Equal("自定义详情", entry.Details);
             Assert.Equal(AppGroup.Ide, entry.Group);
             Assert.Equal(2, entry.Order);
             Assert.True(entry.IsManual);

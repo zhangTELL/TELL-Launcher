@@ -10,6 +10,10 @@ public sealed class AppEntry
 
     public string? IconPath { get; set; }
 
+    public string? DetailImagePath { get; set; }
+
+    public string? Details { get; set; }
+
     public AppGroup Group { get; set; }
 
     public int Order { get; set; }

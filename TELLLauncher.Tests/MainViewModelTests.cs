@@ -67,6 +67,29 @@ public class MainViewModelTests
     }
 
     [Fact]
+    public void OpenDetailCommand_RaisesOpenDetailRequested()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var viewModel = CreateViewModel(directory);
+            viewModel.Load();
+            var item = viewModel.IdeApps[0];
+            AppItemViewModel? received = null;
+            viewModel.OpenDetailRequested += value => received = value;
+
+            viewModel.OpenDetailCommand.Execute(item);
+
+            Assert.Same(item, received);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
     public void Launch_Failure_ShowsNotification()
     {
         var directory = CreateTempDirectory();
@@ -138,6 +161,7 @@ public class MainViewModelTests
             viewModel.SearchText = "code";
 
             Assert.True(viewModel.IsSearching);
+            Assert.False(viewModel.IsSearchEmpty);
             Assert.Single(viewModel.SearchResults);
             Assert.Equal("VS Code", viewModel.SearchResults[0].Name);
             Assert.Empty(viewModel.IdeApps);
@@ -189,6 +213,7 @@ public class MainViewModelTests
             viewModel.SearchText = string.Empty;
 
             Assert.False(viewModel.IsSearching);
+            Assert.True(viewModel.IsSearchEmpty);
             Assert.Empty(viewModel.SearchResults);
             Assert.Single(viewModel.IdeApps);
             Assert.Single(viewModel.AiToolApps);
@@ -243,13 +268,16 @@ public class MainViewModelTests
             {
                 Name = "Renamed Tool",
                 TargetPath = @"C:\Tools\Renamed.exe",
+                DetailImagePath = @"C:\Images\Renamed.png",
+                Details = "重命名后的详情",
                 Group = AppGroup.AiTool
             });
 
             Assert.DoesNotContain(viewModel.IdeApps, app => app.Model.Id == item.Model.Id);
-            Assert.Contains(viewModel.AiToolApps, app =>
-                app.Name == "Renamed Tool" &&
-                app.TargetPath == @"C:\Tools\Renamed.exe");
+            var updated = viewModel.AiToolApps.Single(app => app.Name == "Renamed Tool");
+            Assert.Equal(@"C:\Tools\Renamed.exe", updated.TargetPath);
+            Assert.Equal(@"C:\Images\Renamed.png", updated.Model.DetailImagePath);
+            Assert.Equal("重命名后的详情", updated.Model.Details);
             Assert.Equal(3, viewModel.IdeApps.Count);
             Assert.Equal(7, viewModel.AiToolApps.Count);
         }
