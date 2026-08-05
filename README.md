@@ -69,6 +69,7 @@ dotnet test
 
 - **[DeepSeek](https://www.deepseek.com/)** — 主力代码生成、架构设计和功能迭代
 - **[Kimi](https://kimi.moonshot.cn/)** — UI 设计优化、视觉方案建议
+- **[Codex](https://openai.com/codex/)** — 代码生成与任务协作
 
 ## 许可证
 
