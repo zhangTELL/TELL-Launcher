@@ -43,9 +43,9 @@ public partial class MainWindow : Window
         Closed += OnClosed;
     }
 
-    private void OnLoaded(object sender, RoutedEventArgs e)
+    private async void OnLoaded(object sender, RoutedEventArgs e)
     {
-        _viewModel.Load();
+        await _viewModel.LoadAsync();
     }
 
     private void OnClosed(object? sender, EventArgs e)
@@ -53,9 +53,9 @@ public partial class MainWindow : Window
         _viewModel.Save();
     }
 
-    private void RefreshButton_Click(object sender, RoutedEventArgs e)
+    private async void RefreshButton_Click(object sender, RoutedEventArgs e)
     {
-        _viewModel.RefreshGames();
+        await _viewModel.RefreshGamesAsync();
     }
 
     private void AddButton_Click(object sender, RoutedEventArgs e)

@@ -21,4 +21,6 @@ public sealed class AppEntry
     public bool IsHidden { get; set; }
 
     public bool IsManual { get; set; }
+
+    public DateTime? LastLaunchedAt { get; set; }
 }

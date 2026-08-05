@@ -24,6 +24,69 @@ public sealed class ShortcutScanner
             .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
             .ToList();
 
+        return BuildEntries(shortcuts);
+    }
+
+    public async Task<IReadOnlyList<AppEntry>> ScanAsync()
+    {
+        var result = await Task.Run(() =>
+        {
+            var shortcuts = _desktopDirectories
+                .SelectMany(SafeEnumerateShortcuts)
+                .OrderBy(Path.GetFileName, StringComparer.OrdinalIgnoreCase)
+                .ToList();
+
+            return BuildEntries(shortcuts);
+        });
+
+        return result;
+    }
+
+    public IReadOnlyList<AppEntry> ScanAndMerge(LauncherConfig config)
+    {
+        var scannedEntries = Scan();
+        return MergeEntries(config, scannedEntries);
+    }
+
+    public async Task<IReadOnlyList<AppEntry>> ScanAndMergeAsync(LauncherConfig config)
+    {
+        var scannedEntries = await ScanAsync();
+        return MergeEntries(config, scannedEntries);
+    }
+
+    private static IReadOnlyList<AppEntry> MergeEntries(LauncherConfig config, IReadOnlyList<AppEntry> scannedEntries)
+    {
+        var existingGames = config.Apps
+            .Where(app => app.Group == AppGroup.Game)
+            .ToList();
+
+        var existingKeys = new HashSet<string>(
+            existingGames.Select(GetKey).Concat(config.HiddenGamePaths),
+            StringComparer.OrdinalIgnoreCase);
+
+        var nextOrder = existingGames.Count == 0
+            ? 0
+            : existingGames.Max(app => app.Order) + 1;
+
+        foreach (var entry in scannedEntries)
+        {
+            if (!existingKeys.Add(GetKey(entry)))
+            {
+                continue;
+            }
+
+            entry.Order = nextOrder++;
+            config.Apps.Add(entry);
+        }
+
+        return config.Apps
+            .Where(app => app.Group == AppGroup.Game && !app.IsHidden)
+            .OrderBy(app => app.Order)
+            .ToList();
+    }
+
+    private IReadOnlyList<AppEntry> BuildEntries(IReadOnlyList<string> shortcuts)
+    {
         var entries = new List<AppEntry>(shortcuts.Count);
         var order = 0;
 
@@ -57,38 +120,6 @@ public sealed class ShortcutScanner
         }
 
         return entries;
-    }
-
-    public IReadOnlyList<AppEntry> ScanAndMerge(LauncherConfig config)
-    {
-        var scannedEntries = Scan();
-        var existingGames = config.Apps
-            .Where(app => app.Group == AppGroup.Game)
-            .ToList();
-
-        var existingKeys = new HashSet<string>(
-            existingGames.Select(GetKey).Concat(config.HiddenGamePaths),
-            StringComparer.OrdinalIgnoreCase);
-
-        var nextOrder = existingGames.Count == 0
-            ? 0
-            : existingGames.Max(app => app.Order) + 1;
-
-        foreach (var entry in scannedEntries)
-        {
-            if (!existingKeys.Add(GetKey(entry)))
-            {
-                continue;
-            }
-
-            entry.Order = nextOrder++;
-            config.Apps.Add(entry);
-        }
-
-        return config.Apps
-            .Where(app => app.Group == AppGroup.Game && !app.IsHidden)
-            .OrderBy(app => app.Order)
-            .ToList();
     }
 
     public static string? ResolveShortcutTarget(string shortcutPath)

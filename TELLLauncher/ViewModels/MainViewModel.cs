@@ -151,20 +151,21 @@ public sealed class MainViewModel : ObservableObject
 
     public RelayCommand MoveDownCommand { get; }
 
-    public void Load()
+    public async Task LoadAsync()
     {
-        _config = _launcherService.LoadOrCreate();
+        _config = await _launcherService.LoadOrCreateAsync();
         RefreshCollections();
     }
 
-    public void RefreshGames()
+    public async Task RefreshGamesAsync()
     {
-        _launcherService.RefreshGames(_config);
+        await _launcherService.RefreshGamesAsync(_config);
         RefreshCollections();
     }
 
     public void Save()
     {
+        NormalizeAllOrders();
         _launcherService.Save(_config);
     }
 
@@ -192,7 +193,16 @@ public sealed class MainViewModel : ObservableObject
         if (!result.Success)
         {
             ShowNotification($"启动失败：{result.Message}");
+            return;
         }
+
+        var model = FindModel(item);
+        if (model is not null)
+        {
+            model.LastLaunchedAt = DateTime.Now;
+        }
+
+        Save();
     }
 
     public void ClearNotification()
@@ -478,6 +488,14 @@ public sealed class MainViewModel : ObservableObject
         for (var index = 0; index < ordered.Count; index++)
         {
             ordered[index].Order = index;
+        }
+    }
+
+    private void NormalizeAllOrders()
+    {
+        foreach (var group in new[] { AppGroup.Ide, AppGroup.AiTool, AppGroup.Game })
+        {
+            NormalizeOrders(group);
         }
     }
 

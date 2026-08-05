@@ -52,6 +52,33 @@ public sealed class AppLocator
         return entries;
     }
 
+    public async Task<IReadOnlyList<AppEntry>> CreateDefaultOfficeEntriesAsync()
+    {
+        var descriptors = CreateDefaultDescriptors();
+        return await Task.Run(() =>
+        {
+            var entries = new List<AppEntry>(descriptors.Count);
+            var order = 0;
+
+            foreach (var descriptor in descriptors)
+            {
+                var targetPath = Find(descriptor);
+                entries.Add(new AppEntry
+                {
+                    Id = $"default-{CreateStableId(descriptor.Name)}",
+                    Name = descriptor.Name,
+                    TargetPath = targetPath,
+                    IconPath = targetPath,
+                    Group = descriptor.Group,
+                    Order = order++,
+                    IsManual = false
+                });
+            }
+
+            return (IReadOnlyList<AppEntry>)entries;
+        });
+    }
+
     public string? Find(AppDescriptor descriptor)
     {
         foreach (var root in _searchRoots)

@@ -7,7 +7,7 @@ namespace TELLLauncher.Tests;
 public class MainViewModelTests
 {
     [Fact]
-    public void Load_PopulatesOfficeAndGameCollections()
+    public async Task Load_PopulatesOfficeAndGameCollections()
     {
         var directory = CreateTempDirectory();
 
@@ -19,7 +19,7 @@ public class MainViewModelTests
                 new ShortcutScanner(Array.Empty<string>()));
             var viewModel = new MainViewModel(service);
 
-            viewModel.Load();
+            await viewModel.LoadAsync();
 
             Assert.Equal(4, viewModel.IdeApps.Count);
             Assert.Equal(6, viewModel.AiToolApps.Count);
@@ -34,31 +34,48 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void Launch_Success_DoesNotShowNotification()
+    public async Task Launch_Success_UpdatesLastLaunchedAt()
     {
         var directory = CreateTempDirectory();
 
         try
         {
+            var store = new ConfigStore(directory);
+            var entry = new AppEntry
+            {
+                Name = "Test",
+                TargetPath = Path.Combine(directory, "app.exe"),
+                Group = AppGroup.Ide,
+                Order = 0
+            };
+            File.WriteAllText(entry.TargetPath!, string.Empty);
+            store.Save(new LauncherConfig
+            {
+                DefaultsInitialized = true,
+                Version = 2,
+                Apps = { entry }
+            });
+
             var service = new LauncherService(
-                new ConfigStore(directory),
+                store,
                 new AppLocator(Array.Empty<string>()),
                 new ShortcutScanner(Array.Empty<string>()));
             var fakeLauncher = new FakeProcessLauncher(
                 new LaunchResult(true, string.Empty));
             var viewModel = new MainViewModel(service, fakeLauncher);
-            var executable = Path.Combine(directory, "app.exe");
-            File.WriteAllText(executable, string.Empty);
+            await viewModel.LoadAsync();
+            var now = DateTime.Now;
 
-            viewModel.Launch(new AppItemViewModel(new AppEntry
-            {
-                Name = "Test",
-                TargetPath = executable,
-                Group = AppGroup.Ide
-            }));
+            var loadedItem = viewModel.IdeApps.Single(app => app.Name == "Test");
+            viewModel.Launch(loadedItem);
 
             Assert.False(viewModel.HasNotification);
-            Assert.Equal(executable, fakeLauncher.LastPath);
+            Assert.Equal(entry.TargetPath, fakeLauncher.LastPath);
+            // 验证 LastLaunchedAt 已更新
+            var savedConfig = store.Load();
+            var savedEntry = Assert.Single(savedConfig.Apps);
+            Assert.NotNull(savedEntry.LastLaunchedAt);
+            Assert.True(savedEntry.LastLaunchedAt >= now);
         }
         finally
         {
@@ -67,14 +84,14 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void OpenDetailCommand_RaisesOpenDetailRequested()
+    public async Task OpenDetailCommand_RaisesOpenDetailRequested()
     {
         var directory = CreateTempDirectory();
 
         try
         {
             var viewModel = CreateViewModel(directory);
-            viewModel.Load();
+            await viewModel.LoadAsync();
             var item = viewModel.IdeApps[0];
             AppItemViewModel? received = null;
             viewModel.OpenDetailRequested += value => received = value;
@@ -123,7 +140,7 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void Search_FiltersOfficeIntoCombinedResults()
+    public async Task Search_FiltersOfficeIntoCombinedResults()
     {
         var directory = CreateTempDirectory();
 
@@ -156,7 +173,7 @@ public class MainViewModelTests
                 new AppLocator(Array.Empty<string>()),
                 new ShortcutScanner(Array.Empty<string>()));
             var viewModel = new MainViewModel(service);
-            viewModel.Load();
+            await viewModel.LoadAsync();
 
             viewModel.SearchText = "code";
 
@@ -174,7 +191,7 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void ClearSearch_RestoresGroupedViews()
+    public async Task ClearSearch_RestoresGroupedViews()
     {
         var directory = CreateTempDirectory();
 
@@ -207,7 +224,7 @@ public class MainViewModelTests
                 new AppLocator(Array.Empty<string>()),
                 new ShortcutScanner(Array.Empty<string>()));
             var viewModel = new MainViewModel(service);
-            viewModel.Load();
+            await viewModel.LoadAsync();
             viewModel.SearchText = "code";
 
             viewModel.SearchText = string.Empty;
@@ -226,14 +243,14 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void AddApp_AddsManualEntryToSelectedGroup()
+    public async Task AddApp_AddsManualEntryToSelectedGroup()
     {
         var directory = CreateTempDirectory();
 
         try
         {
             var viewModel = CreateViewModel(directory);
-            viewModel.Load();
+            await viewModel.LoadAsync();
 
             viewModel.AddApp(new AppEntry
             {
@@ -254,14 +271,14 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void UpdateApp_ChangesNamePathAndGroup()
+    public async Task UpdateApp_ChangesNamePathAndGroup()
     {
         var directory = CreateTempDirectory();
 
         try
         {
             var viewModel = CreateViewModel(directory);
-            viewModel.Load();
+            await viewModel.LoadAsync();
             var item = viewModel.IdeApps[0];
 
             viewModel.UpdateApp(item, new AppEntry
@@ -288,7 +305,7 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void RemoveGame_AddsHiddenPathAndRemovesFromList()
+    public async Task RemoveGame_AddsHiddenPathAndRemovesFromList()
     {
         var directory = CreateTempDirectory();
 
@@ -313,7 +330,7 @@ public class MainViewModelTests
                 store,
                 new AppLocator(Array.Empty<string>()),
                 new ShortcutScanner(Array.Empty<string>())));
-            viewModel.Load();
+            await viewModel.LoadAsync();
             var game = viewModel.GameApps.Single();
 
             viewModel.RemoveApp(game);
@@ -329,14 +346,14 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void MoveUpAndDown_ChangeOrderWithinGroup()
+    public async Task MoveUpAndDown_ChangeOrderWithinGroup()
     {
         var directory = CreateTempDirectory();
 
         try
         {
             var viewModel = CreateViewModel(directory);
-            viewModel.Load();
+            await viewModel.LoadAsync();
             var items = viewModel.IdeApps.ToList();
 
             viewModel.MoveUp(items[1]);
@@ -355,14 +372,14 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void MoveBefore_ReordersWithinGroup()
+    public async Task MoveBefore_ReordersWithinGroup()
     {
         var directory = CreateTempDirectory();
 
         try
         {
             var viewModel = CreateViewModel(directory);
-            viewModel.Load();
+            await viewModel.LoadAsync();
             var items = viewModel.IdeApps.ToList();
 
             viewModel.MoveBefore(items[3], items[0]);
@@ -377,14 +394,14 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void MoveToEnd_AppendsWithinGroup()
+    public async Task MoveToEnd_AppendsWithinGroup()
     {
         var directory = CreateTempDirectory();
 
         try
         {
             var viewModel = CreateViewModel(directory);
-            viewModel.Load();
+            await viewModel.LoadAsync();
             var first = viewModel.IdeApps[0];
 
             viewModel.MoveToEnd(first);
@@ -399,14 +416,14 @@ public class MainViewModelTests
     }
 
     [Fact]
-    public void MoveApp_ChangesGroupAndAppendsOrder()
+    public async Task MoveApp_ChangesGroupAndAppendsOrder()
     {
         var directory = CreateTempDirectory();
 
         try
         {
             var viewModel = CreateViewModel(directory);
-            viewModel.Load();
+            await viewModel.LoadAsync();
             var item = viewModel.IdeApps[0];
 
             viewModel.MoveApp(item, AppGroup.Game);

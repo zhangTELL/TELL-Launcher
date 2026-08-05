@@ -12,6 +12,8 @@ public sealed class ConfigStore
         WriteIndented = true
     };
 
+    private const int MaxBackups = 3;
+
     private readonly string _configDirectory;
     private readonly string _fileName;
 
@@ -54,9 +56,38 @@ public sealed class ConfigStore
     public LauncherConfig Save(LauncherConfig config)
     {
         Directory.CreateDirectory(_configDirectory);
+
+        if (File.Exists(ConfigPath))
+        {
+            var backupPath = Path.Combine(
+                _configDirectory,
+                $"config.bak-{DateTime.Now:yyyyMMdd-HHmmss}.json");
+            File.Copy(ConfigPath, backupPath, overwrite: true);
+            PruneOldBackups();
+        }
+
         var json = JsonSerializer.Serialize(config, SerializerOptions);
         File.WriteAllText(ConfigPath, json);
         return config;
+    }
+
+    private void PruneOldBackups()
+    {
+        var backups = Directory.GetFiles(_configDirectory, "config.bak-*.json")
+            .OrderByDescending(f => f)
+            .ToList();
+
+        for (var i = MaxBackups; i < backups.Count; i++)
+        {
+            try
+            {
+                File.Delete(backups[i]);
+            }
+            catch
+            {
+                // 删除失败不阻塞主流程
+            }
+        }
     }
 
     private void BackupCorruptFile()
