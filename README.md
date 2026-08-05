@@ -1,38 +1,75 @@
-# TELL Launcher
+# TELL 启动器
 
-A Steam-style dark-themed Windows application launcher — one-click access to IDEs, AI tools, and games.
+一款 Steam 风格暗色主题的 Windows 应用启动器,把常用的 IDE、AI 工具和游戏集中在一个窗口中,点击即开喵。
 
-## Features
+## 功能特性
 
-- **Sidebar Navigation**: IDE / AI Tools / Games / Recently Launched
-- **Game Cards**: Vertical capsule cards with Steam CDN covers; supports `.lnk` and `.url` shortcuts
-- **Steam Game Library**: Auto-detect installed Steam games via `appmanifest` and `libraryfolders.vdf`
-- **Search**: Real-time fuzzy search across all applications
-- **Drag & Drop**: Reorder and move apps between groups
-- **App Details**: Hero-style detail page with large icons, custom images, and descriptions
-- **Local-First**: All data stored in `%LocalAppData%\TELL Launcher\config.json`, no cloud required
+- **侧边栏导航**:IDE / AI 工具 / 游戏 / 最近启动 四个分组,一键切换喵
+- **胶囊封面卡片**:Steam 风格竖版卡片,自动拉取 Steam 封面图喵
+- **Steam 游戏库**:自动解析 `appmanifest` 与 `libraryfolders.vdf`,识别已安装的 Steam 游戏喵
+- **快捷方式扫描**:自动扫描桌面 `.lnk` / `.url` 快捷方式,支持去重与隐藏记忆喵
+- **实时模糊搜索**:跨全部分组按名称模糊匹配喵
+- **拖拽管理**:支持拖动排序、跨分组移动喵
+- **应用详情页**:大图封面、详细描述、自定义图片喵
+- **自动填充**:添加应用时自动识别名称与图标,并生成默认描述喵
+- **本地优先**:所有配置保存在本地,无需登录、无需联网喵
 
-## Tech Stack
+## 技术栈
 
-- **Framework**: .NET 8 + WPF
-- **Language**: C#
-- **Architecture**: MVVM (hand-rolled)
-- **Storage**: JSON config with backup rotation
+| 项目 | 说明 |
+| --- | --- |
+| 框架 | .NET 8 + WPF |
+| 语言 | C# |
+| 架构 | MVVM(手写实现) |
+| 存储 | JSON 配置文件,带备份轮转 |
+| 测试 | xUnit |
 
-## Build
+## 目录结构
+
+```text
+TELLLauncher/
+├── Models/        # 数据模型(AppEntry / AppGroup / LauncherConfig)
+├── Services/      # 配置读写、程序定位、快捷方式扫描、图标提取、启动等
+├── ViewModels/    # 界面状态与交互逻辑
+├── Views/         # 窗口与对话框(主窗口 / 详情页 / 编辑对话框 / Steam 库)
+└── TELLLauncher.Tests/   # 单元测试
+```
+
+## 构建与发布
 
 ```bash
+# 构建
 dotnet build
+
+# 发布(单文件可执行程序,输出到 publish/)
 dotnet publish -c Release -o publish
 ```
 
-## Acknowledgements
+## 数据存储
 
-本项目由 AI 编程助手辅助开发，鸣谢以下 AI 模型提供的能力支持：
+配置保存在 `%LocalAppData%\TELL Launcher\config.json`,包括:
+
+- 应用清单与自定义修改
+- 手动添加的应用
+- 游戏扫描结果与隐藏状态
+- 分组归属与排序
+- 自定义名称、图标、描述与程序路径
+
+配置文件写入前会自动备份轮转,避免损坏丢失喵。
+
+## 测试
+
+```bash
+dotnet test
+```
+
+## 鸣谢
+
+本项目由 AI 编程助手辅助开发,鸣谢以下 AI 模型提供的能力支持:
 
 - **[DeepSeek](https://www.deepseek.com/)** — 主力代码生成、架构设计和功能迭代
 - **[Kimi](https://kimi.moonshot.cn/)** — UI 设计优化、视觉方案建议
 
-## License
+## 许可证
 
-MIT
+[MIT](LICENSE)
