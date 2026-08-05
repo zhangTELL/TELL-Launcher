@@ -1,0 +1,28 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TELLLauncher", "TELLLauncher\TELLLauncher.csproj", "{D060678A-DA0D-4548-A837-B2A0036276B0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TELLLauncher.Tests", "TELLLauncher.Tests\TELLLauncher.Tests.csproj", "{FBD96451-3D0E-4DB1-B251-5E534CA95F0A}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D060678A-DA0D-4548-A837-B2A0036276B0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D060678A-DA0D-4548-A837-B2A0036276B0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D060678A-DA0D-4548-A837-B2A0036276B0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D060678A-DA0D-4548-A837-B2A0036276B0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FBD96451-3D0E-4DB1-B251-5E534CA95F0A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FBD96451-3D0E-4DB1-B251-5E534CA95F0A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FBD96451-3D0E-4DB1-B251-5E534CA95F0A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FBD96451-3D0E-4DB1-B251-5E534CA95F0A}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,82 @@
+<Window x:Class="TELLLauncher.Views.EditAppDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="添加应用"
+        Width="480"
+        SizeToContent="Height"
+        ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner"
+        Background="White"
+        FontFamily="Segoe UI"
+        FontSize="13"
+        Foreground="#1F2937">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0"
+                   Text="名称"
+                   Margin="0,0,0,6"
+                   FontWeight="SemiBold" />
+        <TextBox Grid.Row="1"
+                 x:Name="NameTextBox"
+                 Padding="8,6"
+                 Margin="0,0,0,14"
+                 BorderBrush="#E5E7EB" />
+
+        <TextBlock Grid.Row="2"
+                   Text="程序路径"
+                   Margin="0,0,0,6"
+                   FontWeight="SemiBold" />
+        <Grid Grid.Row="3">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <TextBox x:Name="PathTextBox"
+                     Padding="8,6"
+                     Margin="0,0,8,0"
+                     BorderBrush="#E5E7EB" />
+            <Button Grid.Column="1"
+                    Content="浏览"
+                    Padding="12,6"
+                    Click="BrowseButton_Click" />
+        </Grid>
+
+        <Grid Grid.Row="4"
+              Margin="0,18,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel>
+                <TextBlock Text="分组"
+                           Margin="0,0,0,6"
+                           FontWeight="SemiBold" />
+                <ComboBox x:Name="GroupComboBox"
+                          Width="180"
+                          Padding="8,5"
+                          HorizontalAlignment="Left" />
+            </StackPanel>
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Bottom">
+                <Button Content="取消"
+                        Width="80"
+                        Padding="0,7"
+                        Margin="0,0,8,0"
+                        Click="CancelButton_Click" />
+                <Button Content="确定"
+                        Width="80"
+                        Padding="0,7"
+                        IsDefault="True"
+                        Click="OkButton_Click" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>
