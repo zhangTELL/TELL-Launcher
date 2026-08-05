@@ -92,24 +92,34 @@ public sealed class ShortcutScanner
 
         foreach (var shortcutPath in shortcuts)
         {
-            string? resolvedTarget;
-            try
-            {
-                resolvedTarget = _shortcutTargetResolver(shortcutPath);
-            }
-            catch
-            {
-                resolvedTarget = null;
-            }
+            var name = Path.GetFileNameWithoutExtension(shortcutPath);
+            string? targetPath;
 
-            var targetPath = string.IsNullOrWhiteSpace(resolvedTarget)
-                ? shortcutPath
-                : resolvedTarget;
+            if (shortcutPath.EndsWith(".url", StringComparison.OrdinalIgnoreCase))
+            {
+                targetPath = ParseUrlShortcut(shortcutPath);
+            }
+            else
+            {
+                string? resolvedTarget;
+                try
+                {
+                    resolvedTarget = _shortcutTargetResolver(shortcutPath);
+                }
+                catch
+                {
+                    resolvedTarget = null;
+                }
+
+                targetPath = string.IsNullOrWhiteSpace(resolvedTarget)
+                    ? shortcutPath
+                    : resolvedTarget;
+            }
 
             entries.Add(new AppEntry
             {
                 Id = Guid.NewGuid().ToString("N"),
-                Name = Path.GetFileNameWithoutExtension(shortcutPath),
+                Name = name,
                 TargetPath = targetPath,
                 IconPath = targetPath,
                 Group = AppGroup.Game,
@@ -120,6 +130,27 @@ public sealed class ShortcutScanner
         }
 
         return entries;
+    }
+
+    private static string? ParseUrlShortcut(string urlPath)
+    {
+        try
+        {
+            foreach (var line in File.ReadLines(urlPath))
+            {
+                if (line.StartsWith("URL=", StringComparison.OrdinalIgnoreCase))
+                {
+                    var url = line.Substring(4).Trim();
+                    return string.IsNullOrWhiteSpace(url) ? null : url;
+                }
+            }
+        }
+        catch
+        {
+            // 文件无法读取时返回 null，保留卡片但无法启动
+        }
+
+        return null;
     }
 
     public static string? ResolveShortcutTarget(string shortcutPath)
@@ -189,7 +220,8 @@ public sealed class ShortcutScanner
             IEnumerable<string> files;
             try
             {
-                files = Directory.EnumerateFiles(directory, "*.lnk");
+                files = Directory.EnumerateFiles(directory, "*.lnk")
+                    .Concat(Directory.EnumerateFiles(directory, "*.url"));
             }
             catch (Exception ex) when (
                 ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)

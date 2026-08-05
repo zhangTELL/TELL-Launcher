@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using TELLLauncher.Models;
 using TELLLauncher.Services;
 
@@ -11,6 +12,7 @@ public sealed class AppItemViewModel : ObservableObject
     {
         Model = model;
         Icon = IconService.LoadIcon(model.IconPath ?? model.TargetPath);
+        LargeIcon = IconService.LoadLargeIcon(model.IconPath ?? model.TargetPath);
     }
 
     public AppEntry Model { get; }
@@ -25,6 +27,8 @@ public sealed class AppItemViewModel : ObservableObject
 
     public ImageSource? Icon { get; private set; }
 
+    public ImageSource? LargeIcon { get; private set; }
+
     public bool HasIcon => Icon is not null;
 
     public bool HasNoIcon => Icon is null;
@@ -34,6 +38,26 @@ public sealed class AppItemViewModel : ObservableObject
     public bool IsResolved => !IsMissing;
 
     public string? DetailImagePath => Model.DetailImagePath;
+
+    public ImageSource? DetailImageSource
+    {
+        get
+        {
+            if (!string.IsNullOrWhiteSpace(DetailImagePath) && File.Exists(DetailImagePath))
+            {
+                try
+                {
+                    return new BitmapImage(new Uri(DetailImagePath));
+                }
+                catch
+                {
+                    // 图片加载失败时回退到大图标
+                }
+            }
+
+            return LargeIcon;
+        }
+    }
 
     public string? Details => Model.Details;
 
@@ -46,7 +70,8 @@ public sealed class AppItemViewModel : ObservableObject
     };
 
     public bool HasDetailImage =>
-        !string.IsNullOrWhiteSpace(DetailImagePath) && File.Exists(DetailImagePath);
+        (!string.IsNullOrWhiteSpace(DetailImagePath) && File.Exists(DetailImagePath))
+        || LargeIcon is not null;
 
     public bool HasNoDetailImage => !HasDetailImage;
 
@@ -57,15 +82,18 @@ public sealed class AppItemViewModel : ObservableObject
     public void Refresh()
     {
         Icon = IconService.LoadIcon(Model.IconPath ?? Model.TargetPath);
+        LargeIcon = IconService.LoadLargeIcon(Model.IconPath ?? Model.TargetPath);
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(TargetPath));
         OnPropertyChanged(nameof(Initial));
         OnPropertyChanged(nameof(Icon));
+        OnPropertyChanged(nameof(LargeIcon));
         OnPropertyChanged(nameof(HasIcon));
         OnPropertyChanged(nameof(HasNoIcon));
         OnPropertyChanged(nameof(IsMissing));
         OnPropertyChanged(nameof(IsResolved));
         OnPropertyChanged(nameof(DetailImagePath));
+        OnPropertyChanged(nameof(DetailImageSource));
         OnPropertyChanged(nameof(Details));
         OnPropertyChanged(nameof(GroupDisplay));
         OnPropertyChanged(nameof(HasDetailImage));

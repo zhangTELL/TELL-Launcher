@@ -90,7 +90,7 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <StackPanel>
+            <StackPanel x:Name="GroupPanel">
                 <TextBlock Text="分组"
                            Margin="0,0,0,6"
                            FontWeight="SemiBold" />

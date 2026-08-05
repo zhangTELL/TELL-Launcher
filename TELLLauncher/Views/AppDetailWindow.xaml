@@ -75,7 +75,7 @@
                     BorderThickness="1"
                     CornerRadius="8">
                 <Grid>
-                    <Image Source="{Binding DetailImagePath}"
+                    <Image Source="{Binding DetailImageSource}"
                            Margin="12"
                            Stretch="Uniform"
                            Visibility="{Binding HasDetailImage, Converter={StaticResource BoolToVis}}" />

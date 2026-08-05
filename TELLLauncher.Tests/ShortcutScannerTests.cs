@@ -121,6 +121,108 @@ public class ShortcutScannerTests
         }
     }
 
+    [Fact]
+    public void Scan_ParsesUrlShortcutAndExtractsUrl()
+    {
+        var desktop = CreateTempDirectory();
+
+        try
+        {
+            CreateUrlFile(desktop, "Counter-Strike 2.url", "steam://rungameid/730");
+            CreateUrlFile(desktop, "Apex Legends.url", "steam://rungameid/1172470");
+
+            var entries = new ShortcutScanner(new[] { desktop }).Scan();
+
+            Assert.Equal(2, entries.Count);
+            var cs2 = Assert.Single(entries, e => e.Name == "Counter-Strike 2");
+            Assert.Equal("steam://rungameid/730", cs2.TargetPath);
+            var apex = Assert.Single(entries, e => e.Name == "Apex Legends");
+            Assert.Equal("steam://rungameid/1172470", apex.TargetPath);
+            Assert.All(entries, e => Assert.Equal(AppGroup.Game, e.Group));
+            Assert.All(entries, e => Assert.False(e.IsManual));
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Scan_IncludesBothLnkAndUrlFiles()
+    {
+        var desktop = CreateTempDirectory();
+
+        try
+        {
+            CreateFile(desktop, "Desktop Game.lnk");
+            CreateUrlFile(desktop, "Steam Game.url", "steam://rungameid/730");
+
+            var entries = new ShortcutScanner(new[] { desktop }, _ => null).Scan();
+
+            Assert.Equal(2, entries.Count);
+            Assert.Contains(entries, e => e.Name == "Desktop Game");
+            Assert.Contains(entries, e => e.Name == "Steam Game");
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Scan_HandlesCorruptUrlFileGracefully()
+    {
+        var desktop = CreateTempDirectory();
+
+        try
+        {
+            CreateFile(desktop, "Corrupt.url");  // 空文件，没有 URL=
+            CreateUrlFile(desktop, "Good.url", "steam://rungameid/730");
+
+            var entries = new ShortcutScanner(new[] { desktop }).Scan();
+
+            // 损坏的 .url 文件仍然保留为卡片（无 TargetPath），正常的正常解析
+            Assert.Equal(2, entries.Count);
+            var corrupt = Assert.Single(entries, e => e.Name == "Corrupt");
+            Assert.Null(corrupt.TargetPath);
+            var good = Assert.Single(entries, e => e.Name == "Good");
+            Assert.Equal("steam://rungameid/730", good.TargetPath);
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ScanAndMerge_DeduplicatesByUrl()
+    {
+        var desktop = CreateTempDirectory();
+        var config = new LauncherConfig();
+        config.Apps.Add(new AppEntry
+        {
+            Name = "CS2",
+            TargetPath = "steam://rungameid/730",
+            Group = AppGroup.Game,
+            Order = 0
+        });
+
+        try
+        {
+            CreateUrlFile(desktop, "CS2.url", "steam://rungameid/730");
+
+            var games = new ShortcutScanner(new[] { desktop }).ScanAndMerge(config);
+
+            // 已存在相同 URL 的游戏，不应重复添加
+            Assert.Single(config.Apps.Where(a => a.Group == AppGroup.Game));
+            Assert.Single(games);
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(
@@ -135,5 +237,13 @@ public class ShortcutScannerTests
         var path = Path.Combine(root, relativePath);
         Directory.CreateDirectory(Path.GetDirectoryName(path)!);
         File.WriteAllText(path, string.Empty);
+    }
+
+    private static void CreateUrlFile(string root, string relativePath, string url)
+    {
+        var path = Path.Combine(root, relativePath);
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        File.WriteAllText(path,
+            $"[InternetShortcut]\r\nURL={url}\r\n");
     }
 }

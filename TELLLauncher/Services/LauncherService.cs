@@ -131,6 +131,10 @@ public sealed class LauncherService
             {
                 existing.TargetPath = defaultEntry.TargetPath;
                 existing.IconPath = defaultEntry.IconPath;
+                if (string.IsNullOrWhiteSpace(existing.Details))
+                {
+                    existing.Details = defaultEntry.Details;
+                }
             }
         }
     }
@@ -165,6 +169,10 @@ public sealed class LauncherService
             {
                 existing.TargetPath = defaultEntry.TargetPath;
                 existing.IconPath = defaultEntry.IconPath;
+                if (string.IsNullOrWhiteSpace(existing.Details))
+                {
+                    existing.Details = defaultEntry.Details;
+                }
             }
         }
     }

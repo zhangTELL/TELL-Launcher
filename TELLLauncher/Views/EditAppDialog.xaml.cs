@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using Microsoft.Win32;
 using TELLLauncher.Models;
@@ -7,11 +8,13 @@ namespace TELLLauncher.Views;
 public partial class EditAppDialog : Window
 {
     private readonly AppEntry _draft;
+    private readonly string _defaultName;
 
-    public EditAppDialog(AppEntry draft, string title)
+    public EditAppDialog(AppEntry draft, string title, bool lockGroup = false)
     {
         InitializeComponent();
         _draft = draft;
+        _defaultName = draft.Name;
         Title = title;
 
         NameTextBox.Text = draft.Name;
@@ -20,6 +23,11 @@ public partial class EditAppDialog : Window
         DetailsTextBox.Text = draft.Details ?? string.Empty;
         GroupComboBox.ItemsSource = new[] { "IDE", "AI 工具", "游戏" };
         GroupComboBox.SelectedIndex = (int)draft.Group;
+
+        if (lockGroup)
+        {
+            GroupPanel.Visibility = Visibility.Collapsed;
+        }
     }
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
@@ -27,12 +35,18 @@ public partial class EditAppDialog : Window
         var dialog = new OpenFileDialog
         {
             Title = "选择程序文件",
-            Filter = "程序或快捷方式 (*.exe;*.lnk)|*.exe;*.lnk|所有文件 (*.*)|*.*"
+            Filter = "程序或快捷方式 (*.exe;*.lnk;*.url)|*.exe;*.lnk;*.url|所有文件 (*.*)|*.*"
         };
 
         if (dialog.ShowDialog(this) == true)
         {
             PathTextBox.Text = dialog.FileName;
+
+            if (NameTextBox.Text == _defaultName
+                || string.IsNullOrWhiteSpace(NameTextBox.Text))
+            {
+                NameTextBox.Text = Path.GetFileNameWithoutExtension(dialog.FileName);
+            }
         }
     }
 

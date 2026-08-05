@@ -60,13 +60,14 @@ public partial class MainWindow : Window
 
     private void AddButton_Click(object sender, RoutedEventArgs e)
     {
+        var isGameTab = _viewModel.SelectedTabIndex == 1;
         var draft = new AppEntry
         {
             Name = "新应用",
-            Group = AppGroup.Ide
+            Group = isGameTab ? AppGroup.Game : AppGroup.Ide
         };
 
-        var dialog = new EditAppDialog(draft, "添加应用")
+        var dialog = new EditAppDialog(draft, "添加应用", lockGroup: isGameTab)
         {
             Owner = this
         };
