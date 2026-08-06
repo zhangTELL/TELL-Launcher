@@ -32,12 +32,12 @@ public sealed record SteamGridDbImage(
 public sealed class SteamGridDbService
 {
     private const string BaseUrl = "https://www.steamgriddb.com/api/v2";
-    private const string DefaultApiKey = "e0e40200b6ad1244f17b48e78df3acb9";
     private static readonly string[] PreferredDimensions =
         { "600x900", "920x430", "460x215" };
 
     private readonly string _cacheDirectory;
     private readonly HttpClient _httpClient;
+    private readonly bool _hasApiKey;
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _keyLocks = new();
 
     public SteamGridDbService(
@@ -47,13 +47,17 @@ public sealed class SteamGridDbService
     {
         _cacheDirectory = cacheDirectory;
         var resolvedApiKey = string.IsNullOrWhiteSpace(apiKey)
-            ? SteamGridDbSettingsStore.TryLoadApiKey() ?? DefaultApiKey
+            ? SteamGridDbSettingsStore.TryLoadApiKey()
             : apiKey;
+        _hasApiKey = !string.IsNullOrWhiteSpace(resolvedApiKey);
         _httpClient = messageHandler is null
             ? new HttpClient { Timeout = TimeSpan.FromSeconds(15) }
             : new HttpClient(messageHandler) { Timeout = TimeSpan.FromSeconds(15) };
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", resolvedApiKey);
+        if (_hasApiKey)
+        {
+            _httpClient.DefaultRequestHeaders.Authorization =
+                new AuthenticationHeaderValue("Bearer", resolvedApiKey);
+        }
     }
 
     public async Task<string?> GetGridPathAsync(
@@ -78,6 +82,11 @@ public sealed class SteamGridDbService
             if (cachedPath is not null)
             {
                 return cachedPath;
+            }
+
+            if (!_hasApiKey)
+            {
+                return null;
             }
 
             if (HasMissMarker(cacheKey))
