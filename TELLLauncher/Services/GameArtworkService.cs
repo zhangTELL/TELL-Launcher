@@ -64,13 +64,19 @@ public sealed class GameArtworkService
         var steamAppId = ResolveSteamAppId(app.TargetPath);
         if (steamAppId is not null)
         {
-            var steamPath = await _coverImageService.GetCapsulePathAsync(steamAppId);
-            if (steamPath is not null)
+            var apiPath = await TrySteamGridDbAsync(steamAppId, app.Name);
+            if (apiPath is not null)
             {
-                return steamPath;
+                return apiPath;
             }
 
-            return await TrySteamGridDbAsync(steamAppId, app.Name);
+            return await _coverImageService.GetCapsulePathAsync(steamAppId);
+        }
+
+        var apiPathByName = await TrySteamGridDbAsync(null, app.Name);
+        if (apiPathByName is not null)
+        {
+            return apiPathByName;
         }
 
         var launchPath = ResolveLaunchPath(app.TargetPath);
@@ -79,8 +85,7 @@ public sealed class GameArtworkService
             return null;
         }
 
-        var localPath = await Task.Run(() => FindHighResolutionImage(launchPath, app.Name));
-        return localPath ?? await TrySteamGridDbAsync(null, app.Name);
+        return await Task.Run(() => FindHighResolutionImage(launchPath, app.Name));
     }
 
     public static string? FindHighResolutionImage(

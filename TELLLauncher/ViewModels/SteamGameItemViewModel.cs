@@ -54,10 +54,10 @@ public sealed class SteamGameItemViewModel : ObservableObject
 
     private async Task LoadCapsuleAsync(CoverImageService coverImageService)
     {
-        var path = await coverImageService.GetCapsulePathAsync(AppId);
-        path ??= _steamGridDbService is null
+        var path = _steamGridDbService is null
             ? null
             : await _steamGridDbService.GetGridPathAsync(AppId, Name);
+        path ??= await coverImageService.GetCapsulePathAsync(AppId);
         if (path is null || !File.Exists(path))
         {
             return;

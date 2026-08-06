@@ -1,5 +1,8 @@
+using System.Net;
+using System.Text;
 using System.Drawing;
 using System.Drawing.Imaging;
+using TELLLauncher.Models;
 using TELLLauncher.Services;
 
 namespace TELLLauncher.Tests;
@@ -120,6 +123,50 @@ public class GameArtworkServiceTests
         }
     }
 
+    [Fact]
+    public async Task GetCapsulePath_PrefersSteamGridDbOverLocalSearch()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var gameDirectory = Path.Combine(directory, "game");
+            Directory.CreateDirectory(gameDirectory);
+            File.WriteAllText(
+                Path.Combine(gameDirectory, "game.exe"),
+                "fake-exe");
+            SavePng(Path.Combine(gameDirectory, "hero.png"), 512, 512);
+
+            var app = new AppEntry
+            {
+                Name = "Test Game",
+                Group = AppGroup.Game,
+                TargetPath = Path.Combine(gameDirectory, "game.exe")
+            };
+            var handler = new FakeApiFirstHandler();
+            var service = new GameArtworkService(
+                Path.Combine(directory, "cache"),
+                handler,
+                new SteamGridDbService(
+                    Path.Combine(directory, "sgdb-cache"),
+                    handler,
+                    "test-api-key"));
+
+            var result = await service.GetCapsulePathAsync(app);
+
+            Assert.NotNull(result);
+            Assert.StartsWith(
+                Path.Combine(directory, "sgdb-cache"),
+                result);
+            Assert.Equal(1, handler.SearchCallCount);
+            Assert.Equal(1, handler.GameGridCallCount);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(
@@ -135,5 +182,88 @@ public class GameArtworkServiceTests
         using var graphics = Graphics.FromImage(bitmap);
         graphics.Clear(Color.DarkSlateBlue);
         bitmap.Save(path, ImageFormat.Png);
+    }
+
+    private sealed class FakeApiFirstHandler : HttpMessageHandler
+    {
+        public int SearchCallCount { get; private set; }
+
+        public int GameGridCallCount { get; private set; }
+
+        protected override Task<HttpResponseMessage> SendAsync(
+            HttpRequestMessage request,
+            CancellationToken cancellationToken)
+        {
+            var uri = request.RequestUri!;
+            if (uri.Host == "cdn.example")
+            {
+                return Task.FromResult(new HttpResponseMessage(HttpStatusCode.OK)
+                {
+                    Content = new ByteArrayContent(new byte[] { 1, 2, 3, 4 })
+                });
+            }
+
+            if (uri.AbsolutePath.Contains(
+                    "/search/autocomplete/",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                SearchCallCount++;
+                return Task.FromResult(JsonResponse(SearchJson));
+            }
+
+            if (uri.AbsolutePath.Contains(
+                    "/grids/game/",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                GameGridCallCount++;
+                return Task.FromResult(JsonResponse(GridsJson));
+            }
+
+            return Task.FromResult(new HttpResponseMessage(HttpStatusCode.NotFound));
+        }
+
+        private static HttpResponseMessage JsonResponse(string json)
+        {
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(json, Encoding.UTF8, "application/json")
+            };
+        }
+
+        private const string SearchJson =
+            """
+            {
+              "success": true,
+              "data": [
+                {
+                  "id": 42,
+                  "name": "Test Game",
+                  "verified": true,
+                  "types": []
+                }
+              ]
+            }
+            """;
+
+        private const string GridsJson =
+            """
+            {
+              "success": true,
+              "data": [
+                {
+                  "id": 7,
+                  "score": 1,
+                  "style": "alternate",
+                  "width": 600,
+                  "height": 900,
+                  "mime": "image/png",
+                  "url": "https://cdn.example/grid/test.png",
+                  "thumb": "https://cdn.example/thumb/test.jpg",
+                  "upvotes": 0,
+                  "downvotes": 0
+                }
+              ]
+            }
+            """;
     }
 }
