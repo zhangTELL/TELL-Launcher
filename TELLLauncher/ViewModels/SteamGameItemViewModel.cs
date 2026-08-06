@@ -11,15 +11,19 @@ public sealed class SteamGameItemViewModel : ObservableObject
 
     public SteamGameItemViewModel(
         SteamGameInfo model,
-        CoverImageService? coverImageService = null)
+        CoverImageService? coverImageService = null,
+        SteamGridDbService? steamGridDbService = null)
     {
         Model = model;
+        _steamGridDbService = steamGridDbService;
 
         if (coverImageService is not null)
         {
             _ = LoadCapsuleAsync(coverImageService);
         }
     }
+
+    private readonly SteamGridDbService? _steamGridDbService;
 
     public SteamGameInfo Model { get; }
 
@@ -51,6 +55,9 @@ public sealed class SteamGameItemViewModel : ObservableObject
     private async Task LoadCapsuleAsync(CoverImageService coverImageService)
     {
         var path = await coverImageService.GetCapsulePathAsync(AppId);
+        path ??= _steamGridDbService is null
+            ? null
+            : await _steamGridDbService.GetGridPathAsync(AppId, Name);
         if (path is null || !File.Exists(path))
         {
             return;

@@ -32,17 +32,26 @@ public sealed class GameArtworkService
     };
 
     private readonly CoverImageService _coverImageService;
+    private readonly SteamGridDbService? _steamGridDbService;
 
     public GameArtworkService(
         string cacheDirectory,
-        HttpMessageHandler? messageHandler = null)
+        HttpMessageHandler? messageHandler = null,
+        SteamGridDbService? steamGridDbService = null)
     {
         _coverImageService = new CoverImageService(cacheDirectory, messageHandler);
+        _steamGridDbService = steamGridDbService ?? new SteamGridDbService(
+            Path.Combine(cacheDirectory, "steamgriddb"),
+            messageHandler);
     }
 
-    public GameArtworkService(CoverImageService coverImageService)
+    public GameArtworkService(
+        CoverImageService coverImageService,
+        SteamGridDbService? steamGridDbService = null)
     {
         _coverImageService = coverImageService;
+        _steamGridDbService = steamGridDbService ?? new SteamGridDbService(
+            Path.Combine(coverImageService.CacheDirectory, "steamgriddb"));
     }
 
     public async Task<string?> GetCapsulePathAsync(AppEntry app)
@@ -55,7 +64,13 @@ public sealed class GameArtworkService
         var steamAppId = ResolveSteamAppId(app.TargetPath);
         if (steamAppId is not null)
         {
-            return await _coverImageService.GetCapsulePathAsync(steamAppId);
+            var steamPath = await _coverImageService.GetCapsulePathAsync(steamAppId);
+            if (steamPath is not null)
+            {
+                return steamPath;
+            }
+
+            return await TrySteamGridDbAsync(steamAppId, app.Name);
         }
 
         var launchPath = ResolveLaunchPath(app.TargetPath);
@@ -64,7 +79,8 @@ public sealed class GameArtworkService
             return null;
         }
 
-        return await Task.Run(() => FindHighResolutionImage(launchPath, app.Name));
+        var localPath = await Task.Run(() => FindHighResolutionImage(launchPath, app.Name));
+        return localPath ?? await TrySteamGridDbAsync(null, app.Name);
     }
 
     public static string? FindHighResolutionImage(
@@ -139,6 +155,20 @@ public sealed class GameArtworkService
         }
 
         return null;
+    }
+
+    private async Task<string?> TrySteamGridDbAsync(
+        string? steamAppId,
+        string gameName)
+    {
+        if (_steamGridDbService is null)
+        {
+            return null;
+        }
+
+        return await _steamGridDbService.GetGridPathAsync(
+            steamAppId,
+            gameName);
     }
 
     private static string? ResolveSteamAppId(string? targetPath)

@@ -32,6 +32,8 @@ public sealed class CoverImageService
         _preferLocalSteamCache = preferLocalSteamCache;
     }
 
+    public string CacheDirectory => _cacheDirectory;
+
     /// <summary>
     /// 从启动目标（如 steam://rungameid/730）中提取 Steam AppId，非 Steam 目标返回 null。
     /// </summary>

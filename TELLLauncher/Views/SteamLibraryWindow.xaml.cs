@@ -36,8 +36,13 @@ public partial class SteamLibraryWindow : Window
             "TELL Launcher",
             "covers");
         var coverService = new CoverImageService(coverDirectory);
+        var steamGridDbService = new SteamGridDbService(
+            Path.Combine(coverDirectory, "steamgriddb"));
         GameList.ItemsSource = games
-            .Select(game => new SteamGameItemViewModel(game, coverService))
+            .Select(game => new SteamGameItemViewModel(
+                game,
+                coverService,
+                steamGridDbService))
             .ToList();
         CountText.Text = $"已安装 {games.Count} 个游戏";
         EmptyText.Visibility = games.Count == 0
