@@ -39,6 +39,15 @@ public sealed class AppItemViewModel : ObservableObject
 
     public bool IsOffice => !IsGame;
 
+    /// <summary>
+    /// 强制使用横版卡片（用于"最近启动"等混合分区，避免游戏竖版胶囊与办公横版卡大小不一）。
+    /// </summary>
+    public bool ForceHorizontalCard { get; set; }
+
+    public bool ShowAsGameCard => IsGame && !ForceHorizontalCard;
+
+    public bool ShowAsOfficeCard => !ShowAsGameCard;
+
     public string? SteamAppId => CoverImageService.ExtractSteamAppId(Model.TargetPath);
 
     public ImageSource? CapsuleImage
@@ -166,6 +175,8 @@ public sealed class AppItemViewModel : ObservableObject
         OnPropertyChanged(nameof(IsSteamLibrary));
         OnPropertyChanged(nameof(IsGame));
         OnPropertyChanged(nameof(IsOffice));
+        OnPropertyChanged(nameof(ShowAsGameCard));
+        OnPropertyChanged(nameof(ShowAsOfficeCard));
         OnPropertyChanged(nameof(SteamAppId));
         OnPropertyChanged(nameof(DetailImagePath));
         OnPropertyChanged(nameof(DetailImageSource));

@@ -1,6 +1,5 @@
 using System.Windows;
 using TELLLauncher.Models;
-using TELLLauncher.Services;
 using TELLLauncher.ViewModels;
 
 namespace TELLLauncher.Views;
@@ -9,17 +8,14 @@ public partial class AppDetailWindow : Window
 {
     private readonly MainViewModel _viewModel;
     private readonly AppItemViewModel _item;
-    private readonly IProcessLauncher _processLauncher;
 
     public AppDetailWindow(
         MainViewModel viewModel,
-        AppItemViewModel item,
-        IProcessLauncher? processLauncher = null)
+        AppItemViewModel item)
     {
         InitializeComponent();
         _viewModel = viewModel;
         _item = item;
-        _processLauncher = processLauncher ?? new ProcessLauncher();
         DataContext = item;
         WindowHelper.EnableDarkTitleBar(this);
     }
@@ -38,16 +34,9 @@ public partial class AppDetailWindow : Window
             return;
         }
 
-        var result = _processLauncher.Launch(_item.TargetPath!);
-        if (!result.Success)
-        {
-            MessageBox.Show(
-                this,
-                $"启动失败：{result.Message}",
-                "启动失败",
-                MessageBoxButton.OK,
-                MessageBoxImage.Warning);
-        }
+        // 走 ViewModel.Launch 以记录 LastLaunchedAt 并刷新"最近启动"
+        _viewModel.Launch(_item);
+        Close();
     }
 
     private void EditButton_Click(object sender, RoutedEventArgs e)

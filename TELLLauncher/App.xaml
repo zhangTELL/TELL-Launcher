@@ -269,7 +269,7 @@
                         <Setter Property="Width" Value="340" />
                         <Setter Property="Height" Value="96" />
                         <Style.Triggers>
-                            <DataTrigger Binding="{Binding IsGame}" Value="True">
+                            <DataTrigger Binding="{Binding ShowAsGameCard}" Value="True">
                                 <Setter Property="Width" Value="184" />
                                 <Setter Property="Height" Value="276" />
                             </DataTrigger>
@@ -281,7 +281,7 @@
                 <Border x:Name="GameCard"
                         CornerRadius="4"
                         RenderTransformOrigin="0.5,0.5"
-                        Visibility="{Binding IsGame, Converter={StaticResource BoolToVis}}"
+                        Visibility="{Binding ShowAsGameCard, Converter={StaticResource BoolToVis}}"
                         ToolTip="{Binding Name}">
                     <Border.RenderTransform>
                         <ScaleTransform x:Name="GameCardScale" />
@@ -408,7 +408,7 @@
                         CornerRadius="4"
                         BorderThickness="1"
                         RenderTransformOrigin="0.5,0.5"
-                        Visibility="{Binding IsOffice, Converter={StaticResource BoolToVis}}"
+                        Visibility="{Binding ShowAsOfficeCard, Converter={StaticResource BoolToVis}}"
                         ToolTip="{Binding TargetPath}">
                     <Border.RenderTransform>
                         <ScaleTransform x:Name="OfficeCardScale" />

@@ -474,7 +474,11 @@ public sealed class MainViewModel : ObservableObject
                      .OrderByDescending(app => app.LastLaunchedAt)
                      .Take(10))
         {
-            RecentApps.Add(new AppItemViewModel(app, _coverImageService));
+            // 最近启动为混合分区，统一使用横版卡片，避免大小不一
+            RecentApps.Add(new AppItemViewModel(app, _coverImageService)
+            {
+                ForceHorizontalCard = true
+            });
         }
 
         StatusText = $"办公 {IdeApps.Count + AiToolApps.Count} 个 · 游戏 {GameApps.Count} 个";
