@@ -61,14 +61,7 @@ dotnet publish -c Release -o publish
 
 ## SteamGridDB API
 
-SteamGridDB 用于补充游戏封面:Steam 没有本地/CDN 图以及非 Steam 游戏会通过 API 搜索并缓存竖版高清封面喵。
-
-- 服务地址:`https://www.steamgriddb.com/api/v2`
-- API Key 读取优先级:环境变量 `STEAMGRIDDB_API_KEY` > `%LocalAppData%\TELL Launcher\steamgriddb.json`(格式为 `{"apiKey": "..."}`)
-- API Key 只保存在本机配置或环境变量中,不会写入仓库
-- 封面缓存:`%LocalAppData%\TELL Launcher\covers\steamgriddb`
-- 查找顺序:SteamGridDB API → Steam 本地缓存 / Steam CDN / 本地高清图
-- 未配置 API Key 时自动跳过 SteamGridDB,只使用本地缓存和本地高清图
+游戏封面使用了 [SteamGridDB](https://www.steamgriddb.com/) 的 API 补充获取喵。
 
 ## 测试
 
