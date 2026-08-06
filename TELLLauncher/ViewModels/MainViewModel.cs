@@ -18,6 +18,7 @@ public sealed class MainViewModel : ObservableObject
     private readonly LauncherService _launcherService;
     private readonly IProcessLauncher _processLauncher;
     private readonly CoverImageService? _coverImageService;
+    private readonly GameArtworkService? _gameArtworkService;
     private LauncherConfig _config = new();
     private NavSection _selectedNav = NavSection.Ide;
     private string _statusText = string.Empty;
@@ -32,11 +33,13 @@ public sealed class MainViewModel : ObservableObject
     public MainViewModel(
         LauncherService launcherService,
         IProcessLauncher? processLauncher = null,
-        CoverImageService? coverImageService = null)
+        CoverImageService? coverImageService = null,
+        GameArtworkService? gameArtworkService = null)
     {
         _launcherService = launcherService;
         _processLauncher = processLauncher ?? new ProcessLauncher();
         _coverImageService = coverImageService;
+        _gameArtworkService = gameArtworkService;
         LaunchCommand = new RelayCommand(parameter => Launch(parameter as AppItemViewModel));
         OpenDetailCommand = new RelayCommand(parameter =>
         {
@@ -444,8 +447,8 @@ public sealed class MainViewModel : ObservableObject
 
             foreach (var app in matches)
             {
-                SearchResults.Add(new AppItemViewModel(app, _coverImageService));
-                CurrentApps.Add(new AppItemViewModel(app, _coverImageService));
+                SearchResults.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
+                CurrentApps.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
             }
 
             ContentTitle = "搜索结果";
@@ -456,17 +459,17 @@ public sealed class MainViewModel : ObservableObject
 
         foreach (var app in GetVisibleApps(AppGroup.Ide))
         {
-            IdeApps.Add(new AppItemViewModel(app, _coverImageService));
+            IdeApps.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
         }
 
         foreach (var app in GetVisibleApps(AppGroup.AiTool))
         {
-            AiToolApps.Add(new AppItemViewModel(app, _coverImageService));
+            AiToolApps.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
         }
 
         foreach (var app in GetVisibleApps(AppGroup.Game))
         {
-            GameApps.Add(new AppItemViewModel(app, _coverImageService));
+            GameApps.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
         }
 
         foreach (var app in _config.Apps
@@ -475,7 +478,7 @@ public sealed class MainViewModel : ObservableObject
                      .Take(10))
         {
             // 最近启动为混合分区，统一使用横版卡片，避免大小不一
-            RecentApps.Add(new AppItemViewModel(app, _coverImageService)
+            RecentApps.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService)
             {
                 ForceHorizontalCard = true
             });

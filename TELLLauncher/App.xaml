@@ -248,6 +248,23 @@
             <Setter Property="BorderThickness" Value="1" />
         </Style>
 
+        <Style TargetType="ComboBoxItem">
+            <Setter Property="Background" Value="#101822" />
+            <Setter Property="Foreground" Value="#C7D5E0" />
+            <Setter Property="Padding" Value="8,5" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Style.Triggers>
+                <Trigger Property="IsHighlighted" Value="True">
+                    <Setter Property="Background" Value="#2A475E" />
+                    <Setter Property="Foreground" Value="#FFFFFF" />
+                </Trigger>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#22344A" />
+                    <Setter Property="Foreground" Value="#FFFFFF" />
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+
         <!-- 深色右键菜单 -->
         <Style TargetType="ContextMenu">
             <Setter Property="Background" Value="#171D25" />

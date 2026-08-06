@@ -57,7 +57,7 @@ public partial class EditAppDialog : Window
         var dialog = new OpenFileDialog
         {
             Title = "选择页面图片",
-            Filter = "图片文件 (*.png;*.jpg;*.jpeg;*.bmp;*.gif)|*.png;*.jpg;*.jpeg;*.bmp;*.gif|所有文件 (*.*)|*.*"
+            Filter = "图片文件 (*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.avif;*.tif;*.tiff)|*.png;*.jpg;*.jpeg;*.bmp;*.gif;*.webp;*.avif;*.tif;*.tiff|所有文件 (*.*)|*.*"
         };
 
         if (dialog.ShowDialog(this) == true)

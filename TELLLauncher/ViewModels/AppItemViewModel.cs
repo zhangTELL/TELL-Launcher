@@ -9,13 +9,18 @@ namespace TELLLauncher.ViewModels;
 public sealed class AppItemViewModel : ObservableObject
 {
     private readonly CoverImageService? _coverImageService;
+    private readonly GameArtworkService? _gameArtworkService;
     private ImageSource? _capsuleImage;
     private bool _capsuleLoadStarted;
 
-    public AppItemViewModel(AppEntry model, CoverImageService? coverImageService = null)
+    public AppItemViewModel(
+        AppEntry model,
+        CoverImageService? coverImageService = null,
+        GameArtworkService? gameArtworkService = null)
     {
         Model = model;
         _coverImageService = coverImageService;
+        _gameArtworkService = gameArtworkService;
         Icon = IconService.LoadIcon(model.IconPath ?? model.TargetPath);
         LargeIcon = IconService.LoadLargeIcon(model.IconPath ?? model.TargetPath);
         _ = LoadCapsuleAsync();
@@ -69,18 +74,20 @@ public sealed class AppItemViewModel : ObservableObject
 
         _capsuleLoadStarted = true;
 
-        if (_coverImageService is null)
+        string? path = null;
+        if (_gameArtworkService is not null)
         {
-            return;
+            path = await _gameArtworkService.GetCapsulePathAsync(Model);
+        }
+        else if (_coverImageService is not null)
+        {
+            var appId = SteamAppId;
+            if (appId is not null)
+            {
+                path = await _coverImageService.GetCapsulePathAsync(appId);
+            }
         }
 
-        var appId = SteamAppId;
-        if (appId is null)
-        {
-            return;
-        }
-
-        var path = await _coverImageService.GetCapsulePathAsync(appId);
         if (path is null || !File.Exists(path))
         {
             return;
@@ -88,12 +95,27 @@ public sealed class AppItemViewModel : ObservableObject
 
         try
         {
-            var image = new BitmapImage();
-            image.BeginInit();
-            image.CacheOption = BitmapCacheOption.OnLoad;
-            image.UriSource = new Uri(path);
-            image.EndInit();
-            image.Freeze();
+            ImageSource? image;
+            if (path.EndsWith(".ico", StringComparison.OrdinalIgnoreCase))
+            {
+                image = IconService.LoadLargeIcon(path);
+            }
+            else
+            {
+                var bitmap = new BitmapImage();
+                bitmap.BeginInit();
+                bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                bitmap.UriSource = new Uri(path);
+                bitmap.EndInit();
+                bitmap.Freeze();
+                image = bitmap;
+            }
+
+            if (image is null)
+            {
+                return;
+            }
+
             CapsuleImage = image;
             OnPropertyChanged(nameof(HasCapsuleImage));
             OnPropertyChanged(nameof(HasNoCapsuleImage));

@@ -9,18 +9,20 @@ public sealed record SteamGameInfo(string AppId, string Name, string InstallDir)
 public sealed class SteamLibraryService
 {
     private readonly IReadOnlyList<string> _steamAppsRoots;
+    private readonly string? _steamInstallPath;
 
     public SteamLibraryService(string? steamInstallPath = null)
     {
-        _steamAppsRoots = CreateLibraryRoots(
-            string.IsNullOrWhiteSpace(steamInstallPath)
-                ? DetectSteamInstallPath()
-                : steamInstallPath);
+        _steamInstallPath = string.IsNullOrWhiteSpace(steamInstallPath)
+            ? DetectSteamInstallPath()
+            : steamInstallPath;
+        _steamAppsRoots = CreateLibraryRoots(_steamInstallPath);
     }
 
     public SteamLibraryService(IEnumerable<string> steamAppsRoots)
     {
         _steamAppsRoots = steamAppsRoots.ToList();
+        _steamInstallPath = DetectSteamInstallPath();
     }
 
     public IReadOnlyList<SteamGameInfo> ScanInstalledGames()
@@ -53,6 +55,47 @@ public sealed class SteamLibraryService
         return games
             .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    public string? GetLocalCapsulePath(string appId)
+    {
+        return FindLocalCapsulePath(appId, _steamInstallPath);
+    }
+
+    public static string? FindLocalCapsulePath(
+        string appId,
+        string? steamInstallPath = null)
+    {
+        var installPath = steamInstallPath ?? DetectSteamInstallPath();
+        if (string.IsNullOrWhiteSpace(installPath))
+        {
+            return null;
+        }
+
+        var cacheDirectory = Path.Combine(
+            installPath,
+            "appcache",
+            "librarycache",
+            appId);
+
+        foreach (var fileName in new[]
+                 {
+                     "library_600x900.jpg",
+                     "library_600x900_schinese.jpg",
+                     "library_hero.jpg",
+                     "library_hero_schinese.jpg",
+                     "header_schinese.jpg",
+                     "header.jpg"
+                 })
+        {
+            var candidate = Path.Combine(cacheDirectory, fileName);
+            if (File.Exists(candidate))
+            {
+                return candidate;
+            }
+        }
+
+        return null;
     }
 
     public static string? DetectSteamInstallPath()

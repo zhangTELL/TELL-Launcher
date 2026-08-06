@@ -67,6 +67,85 @@ public class SteamLibraryServiceTests
         }
     }
 
+    [Fact]
+    public void FindLocalCapsulePath_ReturnsLibraryImage_WhenCached()
+    {
+        var installPath = CreateTempDirectory();
+
+        try
+        {
+            var imagePath = Path.Combine(
+                installPath,
+                "appcache",
+                "librarycache",
+                "10",
+                "library_600x900.jpg");
+            Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
+            File.WriteAllText(imagePath, "fake-jpg");
+
+            var result = SteamLibraryService.FindLocalCapsulePath("10", installPath);
+
+            Assert.Equal(imagePath, result);
+        }
+        finally
+        {
+            Directory.Delete(installPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FindLocalCapsulePath_ReturnsHeaderImage_WhenNoLibraryImage()
+    {
+        var installPath = CreateTempDirectory();
+
+        try
+        {
+            var imagePath = Path.Combine(
+                installPath,
+                "appcache",
+                "librarycache",
+                "20",
+                "header.jpg");
+            Directory.CreateDirectory(Path.GetDirectoryName(imagePath)!);
+            File.WriteAllText(imagePath, "fake-jpg");
+
+            var result = SteamLibraryService.FindLocalCapsulePath("20", installPath);
+
+            Assert.Equal(imagePath, result);
+        }
+        finally
+        {
+            Directory.Delete(installPath, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void FindLocalCapsulePath_PrefersChineseLibraryImage_WhenAvailable()
+    {
+        var installPath = CreateTempDirectory();
+
+        try
+        {
+            var cacheDirectory = Path.Combine(
+                installPath,
+                "appcache",
+                "librarycache",
+                "10");
+            Directory.CreateDirectory(cacheDirectory);
+            var expected = Path.Combine(cacheDirectory, "library_600x900_schinese.jpg");
+            File.WriteAllText(expected, "fake-jpg");
+            File.WriteAllText(Path.Combine(cacheDirectory, "header_schinese.jpg"), "fake-jpg");
+
+            var result = SteamLibraryService.FindLocalCapsulePath("10", installPath);
+
+            Assert.Equal(expected, result);
+        }
+        finally
+        {
+            Directory.Delete(installPath, recursive: true);
+        }
+    }
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(

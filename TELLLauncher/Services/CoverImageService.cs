@@ -19,12 +19,17 @@ public sealed class CoverImageService
 
     private readonly string _cacheDirectory;
     private readonly HttpMessageHandler? _messageHandler;
+    private readonly bool _preferLocalSteamCache;
     private HttpClient? _httpClient;
 
-    public CoverImageService(string cacheDirectory, HttpMessageHandler? messageHandler = null)
+    public CoverImageService(
+        string cacheDirectory,
+        HttpMessageHandler? messageHandler = null,
+        bool preferLocalSteamCache = true)
     {
         _cacheDirectory = cacheDirectory;
         _messageHandler = messageHandler;
+        _preferLocalSteamCache = preferLocalSteamCache;
     }
 
     /// <summary>
@@ -50,6 +55,15 @@ public sealed class CoverImageService
         if (string.IsNullOrWhiteSpace(appId))
         {
             return null;
+        }
+
+        if (_preferLocalSteamCache)
+        {
+            var localSteamPath = SteamLibraryService.FindLocalCapsulePath(appId);
+            if (localSteamPath is not null)
+            {
+                return localSteamPath;
+            }
         }
 
         var cachePath = Path.Combine(_cacheDirectory, $"{appId}.jpg");

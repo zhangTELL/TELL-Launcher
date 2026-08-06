@@ -20,9 +20,14 @@
 
         <!-- 顶部横幅区 -->
         <Grid Grid.Row="0"
-              Background="#101822">
+              Background="#101822"
+              ClipToBounds="True">
             <Image Source="{Binding DetailImageSource}"
                    Stretch="Uniform"
+                   StretchDirection="Both"
+                   Margin="0"
+                   HorizontalAlignment="Center"
+                   VerticalAlignment="Center"
                    Visibility="{Binding HasDetailImage, Converter={StaticResource BoolToVis}}" />
             <TextBlock Text="暂无页面图片"
                        HorizontalAlignment="Center"

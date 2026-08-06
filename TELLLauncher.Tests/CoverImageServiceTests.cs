@@ -39,7 +39,10 @@ public class CoverImageServiceTests
             var cachedPath = Path.Combine(directory, "730.jpg");
             File.WriteAllText(cachedPath, "fake-jpg");
             var handler = new CountingHandler(HttpStatusCode.OK, new byte[] { 1 });
-            var service = new CoverImageService(directory, handler);
+            var service = new CoverImageService(
+                directory,
+                handler,
+                preferLocalSteamCache: false);
 
             var result = await service.GetCapsulePathAsync("730");
 
@@ -61,7 +64,10 @@ public class CoverImageServiceTests
         {
             var handler = new CountingHandler(
                 HttpStatusCode.OK, new byte[] { 0xFF, 0xD8, 0xFF });
-            var service = new CoverImageService(directory, handler);
+            var service = new CoverImageService(
+                directory,
+                handler,
+                preferLocalSteamCache: false);
 
             var result = await service.GetCapsulePathAsync("730");
 
@@ -88,7 +94,10 @@ public class CoverImageServiceTests
         try
         {
             var handler = new CountingHandler(HttpStatusCode.NotFound, null);
-            var service = new CoverImageService(directory, handler);
+            var service = new CoverImageService(
+                directory,
+                handler,
+                preferLocalSteamCache: false);
 
             var result = await service.GetCapsulePathAsync("999999");
 
@@ -115,7 +124,10 @@ public class CoverImageServiceTests
         try
         {
             var handler = new CountingHandler(HttpStatusCode.OK, new byte[] { 1 });
-            var service = new CoverImageService(directory, handler);
+            var service = new CoverImageService(
+                directory,
+                handler,
+                preferLocalSteamCache: false);
 
             Assert.Null(await service.GetCapsulePathAsync(null));
             Assert.Null(await service.GetCapsulePathAsync(""));

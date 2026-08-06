@@ -24,14 +24,16 @@ public partial class MainWindow : Window
         var configDirectory = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "TELL Launcher");
+        var coverImageService = new CoverImageService(
+            Path.Combine(configDirectory, "covers"));
 
         _viewModel = new MainViewModel(
             new LauncherService(
                 new ConfigStore(configDirectory),
                 new AppLocator(),
                 new ShortcutScanner()),
-            coverImageService: new CoverImageService(
-                Path.Combine(configDirectory, "covers")));
+            coverImageService: coverImageService,
+            gameArtworkService: new GameArtworkService(coverImageService));
 
         DataContext = _viewModel;
 
