@@ -249,11 +249,8 @@ public sealed class MainViewModel : ObservableObject
 
         Save();
 
-        // 启动后刷新"最近启动"分区
-        if (SelectedNav == NavSection.Recent)
-        {
-            RefreshCollections();
-        }
+        // 启动成功后无条件刷新集合，确保"最近启动"分区与最新记录同步
+        RefreshCollections();
     }
 
     public void ClearNotification()

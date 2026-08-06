@@ -576,6 +576,53 @@ public class MainViewModelTests
         }
     }
 
+    [Fact]
+    public async Task Launch_FromOtherSection_PopulatesRecentApps()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var store = new ConfigStore(directory);
+            var entry = new AppEntry
+            {
+                Name = "Recent Test",
+                TargetPath = Path.Combine(directory, "app.exe"),
+                Group = AppGroup.Ide,
+                Order = 0
+            };
+            File.WriteAllText(entry.TargetPath!, string.Empty);
+            store.Save(new LauncherConfig
+            {
+                DefaultsInitialized = true,
+                Version = 2,
+                Apps = { entry }
+            });
+
+            var service = new LauncherService(
+                store,
+                new AppLocator(Array.Empty<string>()),
+                new ShortcutScanner(Array.Empty<string>()));
+            var fakeLauncher = new FakeProcessLauncher(
+                new LaunchResult(true, string.Empty));
+            var viewModel = new MainViewModel(service, fakeLauncher);
+            await viewModel.LoadAsync();
+
+            // 在 IDE 页启动（不是"最近启动"页）
+            var item = viewModel.IdeApps.Single(app => app.Name == "Recent Test");
+            viewModel.Launch(item);
+
+            // 切到"最近启动"页应能看到记录
+            viewModel.SelectNavCommand.Execute(NavSection.Recent);
+            Assert.Single(viewModel.CurrentApps);
+            Assert.Equal("Recent Test", viewModel.CurrentApps[0].Name);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
     private static MainViewModel CreateViewModel(string directory)
     {
         var service = new LauncherService(
