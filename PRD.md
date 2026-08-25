@@ -53,21 +53,21 @@
 
 | 显示名称 | 说明 |
 | --- | --- |
-| Visual Studio | 用户表述为“vs” |
+| Visual Studio |  |
 | VS Code | |
 | PyCharm | |
-| IntelliJ IDEA | 用户表述为“IDEA” |
+| IntelliJ IDEA |  |
 
 #### AI 工具
 
 | 显示名称 | 说明 |
 | --- | --- |
-| Trae | 用户表述为“Trea”，以实际安装程序为准 |
+| Trae |  |
 | WorkBuddy | |
 | ChatGPT | |
 | Claude | |
 | CC Switch | |
-| Marvis | 用户表述为“marivs”，以实际安装程序为准 |
+| Marvis |  |
 
 说明：如果某个程序名称与实际安装不一致，启动器应以实际找到的程序为准；找不到时允许用户手动指定程序文件。
 
