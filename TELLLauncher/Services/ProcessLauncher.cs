@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
 
 namespace TELLLauncher.Services;
 
@@ -12,6 +13,13 @@ public interface IProcessLauncher
 
 public sealed class ProcessLauncher : IProcessLauncher
 {
+    /// <summary>
+    /// RFC 3986 的 scheme 规则：以字母开头，后跟字母、数字以及 + - . 。
+    /// </summary>
+    private static readonly Regex UriSchemePattern = new(
+        @"^[A-Za-z][A-Za-z0-9+.\-]*$",
+        RegexOptions.Compiled);
+
     public LaunchResult Launch(string path)
     {
         if (string.IsNullOrWhiteSpace(path))
@@ -59,6 +67,10 @@ public sealed class ProcessLauncher : IProcessLauncher
             return false;
         }
 
-        return path.Take(schemeSeparatorIndex).All(char.IsLetterOrDigit);
+        // 只取冒号之前的部分做 scheme 校验。此前仅判断"全是字母数字"，
+        // 会把 com.epicgames.launcher:// 这类含点的合法协议误判成文件路径，
+        // 进而因 File.Exists 失败而报"程序文件不存在"。
+        var scheme = path[..schemeSeparatorIndex];
+        return UriSchemePattern.IsMatch(scheme);
     }
 }

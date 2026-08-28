@@ -27,6 +27,13 @@ public sealed class MainViewModel : ObservableObject
     /// </summary>
     private bool _isLoaded;
 
+    /// <summary>
+    /// 按 AppEntry.Id 缓存卡片视图模型。RefreshCollections 会被搜索框高频触发，
+    /// 而 AppItemViewModel 的构造函数会同步提取两次图标（P/Invoke + 位图编解码），
+    /// 每次重建都会把这份成本重复一遍，因此这里按 Id 复用实例。
+    /// </summary>
+    private readonly Dictionary<string, AppItemViewModel> _viewModels = new(StringComparer.Ordinal);
+
     private NavSection _selectedNav = NavSection.Ide;
     private string _statusText = string.Empty;
     private string _contentTitle = string.Empty;
@@ -97,9 +104,10 @@ public sealed class MainViewModel : ObservableObject
 
     public ObservableCollection<AppItemViewModel> RecentApps { get; } = new();
 
+    /// <summary>
+    /// 界面实际绑定的集合：非搜索态为当前分区内容，搜索态为搜索结果。
+    /// </summary>
     public ObservableCollection<AppItemViewModel> CurrentApps { get; } = new();
-
-    public ObservableCollection<AppItemViewModel> SearchResults { get; } = new();
 
     public NavSection SelectedNav
     {
@@ -309,7 +317,7 @@ public sealed class MainViewModel : ObservableObject
         model.IconPath = draft.IconPath;
         model.DetailImagePath = draft.DetailImagePath;
         model.Details = draft.Details;
-        model.IsManual = draft.IsManual || model.IsManual;
+        model.IsManual = draft.IsManual;
 
         if (model.Group != draft.Group)
         {
@@ -319,6 +327,10 @@ public sealed class MainViewModel : ObservableObject
         }
 
         Save();
+
+        // 视图模型按 Id 复用，实例在刷新后依然有效，这里刷新其缓存的图标与派生属性，
+        // 使改名/换路径后的结果立即反映到界面（详情窗口与主窗口都会走到这里）
+        item.Refresh();
         RefreshCollections();
     }
 
@@ -378,6 +390,13 @@ public sealed class MainViewModel : ObservableObject
         var targetModel = FindModel(target);
         if (sourceModel is null || targetModel is null ||
             sourceModel.Group != targetModel.Group)
+        {
+            return;
+        }
+
+        // 拖到自己身上时直接忽略。若继续往下走，source 会先从列表移除，
+        // 随后找不到 target 而落到末尾，表现为条目莫名坠底。
+        if (sourceModel.Id == targetModel.Id)
         {
             return;
         }
@@ -452,8 +471,9 @@ public sealed class MainViewModel : ObservableObject
         AiToolApps.Clear();
         GameApps.Clear();
         RecentApps.Clear();
-        SearchResults.Clear();
         CurrentApps.Clear();
+
+        PruneViewModelCache();
 
         if (isSearching)
         {
@@ -461,13 +481,14 @@ public sealed class MainViewModel : ObservableObject
                 .Concat(GetVisibleApps(AppGroup.AiTool))
                 .Concat(GetVisibleApps(AppGroup.Game))
                 .Where(app => MatchesSearch(app, searchText))
-                .OrderBy(app => app.Order)
+                // Order 只在各分区内部编号，跨分区比较没有意义，因此先按分区聚合
+                .OrderBy(app => app.Group)
+                .ThenBy(app => app.Order)
                 .ToList();
 
             foreach (var app in matches)
             {
-                SearchResults.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
-                CurrentApps.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
+                CurrentApps.Add(GetOrCreateViewModel(app));
             }
 
             ContentTitle = "搜索结果";
@@ -478,17 +499,17 @@ public sealed class MainViewModel : ObservableObject
 
         foreach (var app in GetVisibleApps(AppGroup.Ide))
         {
-            IdeApps.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
+            IdeApps.Add(GetOrCreateViewModel(app));
         }
 
         foreach (var app in GetVisibleApps(AppGroup.AiTool))
         {
-            AiToolApps.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
+            AiToolApps.Add(GetOrCreateViewModel(app));
         }
 
         foreach (var app in GetVisibleApps(AppGroup.Game))
         {
-            GameApps.Add(new AppItemViewModel(app, _coverImageService, _gameArtworkService));
+            GameApps.Add(GetOrCreateViewModel(app));
         }
 
         foreach (var app in _config.Apps
@@ -505,6 +526,50 @@ public sealed class MainViewModel : ObservableObject
 
         StatusText = $"办公 {IdeApps.Count + AiToolApps.Count} 个 · 游戏 {GameApps.Count} 个";
         ApplyNavSelection();
+    }
+
+    /// <summary>
+    /// 取（或在首次出现时创建）与条目对应的卡片视图模型，使刷新与搜索都能复用已有实例。
+    /// </summary>
+    private AppItemViewModel GetOrCreateViewModel(AppEntry app)
+    {
+        if (_viewModels.TryGetValue(app.Id, out var existing))
+        {
+            return existing;
+        }
+
+        var created = new AppItemViewModel(app, _coverImageService, _gameArtworkService);
+        _viewModels[app.Id] = created;
+        return created;
+    }
+
+    /// <summary>
+    /// 移除已不在配置中的条目所对应的缓存，避免条目删除后视图模型长期驻留。
+    /// </summary>
+    private void PruneViewModelCache()
+    {
+        var alive = _config.Apps
+            .Select(app => app.Id)
+            .ToHashSet(StringComparer.Ordinal);
+
+        List<string>? stale = null;
+        foreach (var id in _viewModels.Keys)
+        {
+            if (!alive.Contains(id))
+            {
+                (stale ??= new List<string>()).Add(id);
+            }
+        }
+
+        if (stale is null)
+        {
+            return;
+        }
+
+        foreach (var id in stale)
+        {
+            _viewModels.Remove(id);
+        }
     }
 
     private void ApplyNavSelection()

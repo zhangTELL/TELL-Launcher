@@ -2,7 +2,7 @@
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="clr-namespace:TELLLauncher.ViewModels"
-             StartupUri="MainWindow.xaml">
+             xmlns:views="clr-namespace:TELLLauncher.Views">
     <Application.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
@@ -266,16 +266,76 @@
         </Style>
 
         <!-- 深色右键菜单 -->
+        <!-- 注意：StaticResource 在同一 ResourceDictionary 内要求"先定义后引用"，
+             若把 MenuItem 样式写在 ContextMenu 之后，加载时会抛"找不到资源"，
+             而卡片模板每实例化一次就触发一次异常。 -->
+        <Style x:Key="CardContextMenuItemStyle" TargetType="MenuItem">
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="Foreground" Value="#C7D5E0" />
+            <Setter Property="Padding" Value="14,6" />
+            <Setter Property="HorizontalContentAlignment" Value="Left" />
+            <Setter Property="VerticalContentAlignment" Value="Center" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="MenuItem">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True">
+                            <ContentPresenter ContentSource="Header"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"
+                                              SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsHighlighted" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#22344A" />
+                                <Setter Property="Foreground" Value="#FFFFFF" />
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="Bd" Property="Background" Value="#2A475E" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Foreground" Value="#6D7885" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- 深色分隔线。不能用默认的浅色分隔线，也不能复用 MenuItem 样式 -->
+        <Style x:Key="CardContextMenuSeparatorStyle" TargetType="Separator">
+            <Setter Property="Height" Value="1" />
+            <Setter Property="Margin" Value="12,4" />
+            <Setter Property="Background" Value="#3D4450" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Separator">
+                        <Rectangle Fill="{TemplateBinding Background}"
+                                   Height="{TemplateBinding Height}"
+                                   SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- ItemContainerStyle 会套用到 Separator，必须按容器类型分流 -->
+        <views:ContextMenuStyleSelector x:Key="CardContextMenuStyleSelector"
+                                        MenuItemStyle="{StaticResource CardContextMenuItemStyle}"
+                                        SeparatorStyle="{StaticResource CardContextMenuSeparatorStyle}" />
+
         <Style TargetType="ContextMenu">
             <Setter Property="Background" Value="#171D25" />
             <Setter Property="BorderBrush" Value="#3D4450" />
             <Setter Property="Foreground" Value="#C7D5E0" />
             <Setter Property="Padding" Value="4" />
-        </Style>
-        <Style TargetType="MenuItem">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="#C7D5E0" />
-            <Setter Property="Padding" Value="10,5" />
+            <Setter Property="ItemContainerStyleSelector"
+                    Value="{StaticResource CardContextMenuStyleSelector}" />
         </Style>
 
         <!-- 应用卡片：游戏竖版胶囊 / 办公横版卡 -->

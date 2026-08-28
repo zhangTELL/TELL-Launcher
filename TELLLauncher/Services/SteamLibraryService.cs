@@ -31,17 +31,7 @@ public sealed class SteamLibraryService
 
         foreach (var root in _steamAppsRoots)
         {
-            if (!Directory.Exists(root))
-            {
-                continue;
-            }
-
-            foreach (var manifestPath in Directory.EnumerateFiles(root)
-                         .Where(file =>
-                             file.EndsWith(".acf", StringComparison.OrdinalIgnoreCase) &&
-                             Path.GetFileName(file).StartsWith(
-                                 "appmanifest_",
-                                 StringComparison.OrdinalIgnoreCase)))
+            foreach (var manifestPath in SafeEnumerateManifests(root))
             {
                 var game = ParseManifest(manifestPath);
                 if (game is not null &&
@@ -55,6 +45,40 @@ public sealed class SteamLibraryService
         return games
             .OrderBy(game => game.Name, StringComparer.OrdinalIgnoreCase)
             .ToList();
+    }
+
+    /// <summary>
+    /// 枚举库目录下的 appmanifest_*.acf。目录不存在或无权限时静默跳过，
+    /// 避免整个游戏库扫描因单个目录失败而中断。
+    /// </summary>
+    private static IEnumerable<string> SafeEnumerateManifests(string root)
+    {
+        if (!Directory.Exists(root))
+        {
+            yield break;
+        }
+
+        List<string> files;
+        try
+        {
+            files = Directory.EnumerateFiles(root)
+                .Where(file =>
+                    file.EndsWith(".acf", StringComparison.OrdinalIgnoreCase) &&
+                    Path.GetFileName(file).StartsWith(
+                        "appmanifest_",
+                        StringComparison.OrdinalIgnoreCase))
+                .ToList();
+        }
+        catch (Exception ex) when (
+            ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
+        {
+            yield break;
+        }
+
+        foreach (var file in files)
+        {
+            yield return file;
+        }
     }
 
     public string? GetLocalCapsulePath(string appId)
@@ -166,7 +190,12 @@ public sealed class SteamLibraryService
 
     private static SteamGameInfo? ParseManifest(string manifestPath)
     {
-        var content = File.ReadAllText(manifestPath);
+        var content = TryReadAllText(manifestPath);
+        if (content is null)
+        {
+            return null;
+        }
+
         var appId = ReadValue(content, "appid");
         var name = ReadValue(content, "name");
         var installDir = ReadValue(content, "installdir");
@@ -190,7 +219,12 @@ public sealed class SteamLibraryService
 
     private static IEnumerable<string> ParseLibraryPaths(string libraryFoldersPath)
     {
-        var content = File.ReadAllText(libraryFoldersPath);
+        var content = TryReadAllText(libraryFoldersPath);
+        if (content is null)
+        {
+            yield break;
+        }
+
         foreach (Match match in Regex.Matches(
                      content,
                      @"^\s*""path""\s+""(.*)""\s*$",
@@ -201,6 +235,22 @@ public sealed class SteamLibraryService
             {
                 yield return value;
             }
+        }
+    }
+
+    /// <summary>
+    /// 读取文本文件，Steam 占用或权限不足时返回 null 而不是抛出，
+    /// 使单个清单/配置文件的失败不影响整体扫描。
+    /// </summary>
+    private static string? TryReadAllText(string path)
+    {
+        try
+        {
+            return File.ReadAllText(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            return null;
         }
     }
 }

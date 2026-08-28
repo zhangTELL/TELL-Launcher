@@ -70,15 +70,22 @@ public partial class MainWindow : Window
 
     private void AddButton_Click(object sender, RoutedEventArgs e)
     {
-        var isGameSection = _viewModel.SelectedNav is
-            NavSection.Game or NavSection.Recent;
+        // 按当前分区决定默认分组。此前只特判了"游戏"，在"AI 工具"分区添加会得到
+        // IDE 分组的应用；"最近启动"是混合分区，没有明确归属，默认 IDE 并开放选择。
+        var (group, lockGroup) = _viewModel.SelectedNav switch
+        {
+            NavSection.AiTool => (Group: AppGroup.AiTool, Locked: true),
+            NavSection.Game => (Group: AppGroup.Game, Locked: true),
+            _ => (Group: AppGroup.Ide, Locked: _viewModel.SelectedNav == NavSection.Ide)
+        };
+
         var draft = new AppEntry
         {
             Name = "新应用",
-            Group = isGameSection ? AppGroup.Game : AppGroup.Ide
+            Group = group
         };
 
-        var dialog = new EditAppDialog(draft, "添加应用", lockGroup: isGameSection)
+        var dialog = new EditAppDialog(draft, "添加应用", lockGroup: lockGroup)
         {
             Owner = this
         };

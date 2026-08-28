@@ -12,6 +12,9 @@ public sealed class AppItemViewModel : ObservableObject
     private readonly GameArtworkService? _gameArtworkService;
     private ImageSource? _capsuleImage;
     private bool _capsuleLoadStarted;
+    private ImageSource? _detailImageSource;
+    private bool? _isMissing;
+    private bool? _hasDetailImage;
 
     public AppItemViewModel(
         AppEntry model,
@@ -75,17 +78,26 @@ public sealed class AppItemViewModel : ObservableObject
         _capsuleLoadStarted = true;
 
         string? path = null;
-        if (_gameArtworkService is not null)
+        try
         {
-            path = await _gameArtworkService.GetCapsulePathAsync(Model);
-        }
-        else if (_coverImageService is not null)
-        {
-            var appId = SteamAppId;
-            if (appId is not null)
+            if (_gameArtworkService is not null)
             {
-                path = await _coverImageService.GetCapsulePathAsync(appId);
+                path = await _gameArtworkService.GetCapsulePathAsync(Model);
             }
+            else if (_coverImageService is not null)
+            {
+                var appId = SteamAppId;
+                if (appId is not null)
+                {
+                    path = await _coverImageService.GetCapsulePathAsync(appId);
+                }
+            }
+        }
+        catch
+        {
+            // 封面解析失败（目录遍历异常、网络异常等）不应影响卡片显示，
+            // 也不应成为逃逸到 fire-and-forget 调用处的未观察异常
+            return;
         }
 
         if (path is null || !File.Exists(path))
@@ -130,10 +142,19 @@ public sealed class AppItemViewModel : ObservableObject
 
     public bool HasNoIcon => Icon is null;
 
-    public bool IsMissing => string.IsNullOrWhiteSpace(TargetPath) ||
-        (!ProcessLauncher.IsUriTarget(TargetPath) && !File.Exists(TargetPath));
+    /// <summary>
+    /// 目标是否已失效。界面在同一张卡片上多处绑定该属性，每次求值都会访问磁盘，
+    /// 因此缓存结果，由 <see cref="Refresh"/> 清空后重新计算。
+    /// </summary>
+    public bool IsMissing => _isMissing ??= ComputeIsMissing();
 
     public bool IsResolved => !IsMissing;
+
+    private bool ComputeIsMissing()
+    {
+        return string.IsNullOrWhiteSpace(TargetPath) ||
+               (!ProcessLauncher.IsUriTarget(TargetPath) && !File.Exists(TargetPath));
+    }
 
     public bool IsSteamLibrary => Model.IsSteamLibrary;
 
@@ -143,11 +164,25 @@ public sealed class AppItemViewModel : ObservableObject
     {
         get
         {
+            if (_detailImageSource is not null)
+            {
+                return _detailImageSource;
+            }
+
             if (!string.IsNullOrWhiteSpace(DetailImagePath) && File.Exists(DetailImagePath))
             {
                 try
                 {
-                    return new BitmapImage(new Uri(DetailImagePath));
+                    var bitmap = new BitmapImage();
+                    bitmap.BeginInit();
+                    // OnLoad 在读取完成后立即关闭文件句柄。默认的 OnDemand 会一直占用该文件，
+                    // 使用户无法删除或替换这张图片
+                    bitmap.CacheOption = BitmapCacheOption.OnLoad;
+                    bitmap.UriSource = new Uri(DetailImagePath);
+                    bitmap.EndInit();
+                    bitmap.Freeze();
+                    _detailImageSource = bitmap;
+                    return bitmap;
                 }
                 catch
                 {
@@ -169,7 +204,7 @@ public sealed class AppItemViewModel : ObservableObject
         _ => string.Empty
     };
 
-    public bool HasDetailImage =>
+    public bool HasDetailImage => _hasDetailImage ??=
         (!string.IsNullOrWhiteSpace(DetailImagePath) && File.Exists(DetailImagePath))
         || LargeIcon is not null;
 
@@ -184,6 +219,12 @@ public sealed class AppItemViewModel : ObservableObject
         Icon = IconService.LoadIcon(Model.IconPath ?? Model.TargetPath);
         LargeIcon = IconService.LoadLargeIcon(Model.IconPath ?? Model.TargetPath);
         _capsuleLoadStarted = false;
+
+        // 清空依赖磁盘状态的缓存，让随后发出的通知携带重新计算的结果
+        _detailImageSource = null;
+        _isMissing = null;
+        _hasDetailImage = null;
+
         _ = LoadCapsuleAsync();
         OnPropertyChanged(nameof(Name));
         OnPropertyChanged(nameof(TargetPath));

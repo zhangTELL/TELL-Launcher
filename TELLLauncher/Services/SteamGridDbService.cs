@@ -115,8 +115,16 @@ public sealed class SteamGridDbService
 
             return path;
         }
-        catch (Exception ex) when (ex is not OperationCanceledException)
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
+            // 调用方主动取消，按约定向上传播
+            throw;
+        }
+        catch (Exception)
+        {
+            // 其余情况一律降级为"无封面"。注意 HttpClient 超时抛出的 TaskCanceledException
+            // 同样继承自 OperationCanceledException，此处必须吞掉，否则异常会逃逸到
+            // AppItemViewModel 的 fire-and-forget 调用成为未观察异常。
             return null;
         }
         finally

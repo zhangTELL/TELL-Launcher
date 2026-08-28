@@ -45,6 +45,26 @@ public class ProcessLauncherTests
     }
 
     [Theory]
+    [InlineData("com.epicgames.launcher://apps/fortnite")]
+    [InlineData("ms-windows-store://pdp")]
+    [InlineData("my-app://open")]
+    [InlineData("app+special://launch")]
+    public void IsUriTarget_ReturnsTrue_ForSchemesWithDotPlusHyphen(string path)
+    {
+        // RFC 3986 允许 scheme 含 + - . 。此前只判断"全是字母数字"，
+        // 会把 com.epicgames.launcher:// 这类协议误判成文件路径而拒绝启动
+        Assert.True(ProcessLauncher.IsUriTarget(path));
+    }
+
+    [Theory]
+    [InlineData("1abc://scheme-must-start-with-letter")]
+    [InlineData(@"/abs/prefix://not-a-scheme")]
+    public void IsUriTarget_ReturnsFalse_ForInvalidSchemeStart(string path)
+    {
+        Assert.False(ProcessLauncher.IsUriTarget(path));
+    }
+
+    [Theory]
     [InlineData(@"C:\Games\App.exe")]
     [InlineData(@"D:\Steam\steam.exe")]
     [InlineData("relative\\path.exe")]

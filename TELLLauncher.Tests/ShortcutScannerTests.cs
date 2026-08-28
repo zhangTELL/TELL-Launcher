@@ -17,7 +17,8 @@ public class ShortcutScannerTests
 
             var entries = new ShortcutScanner(
                     new[] { desktop },
-                    _ => null)
+                    _ => null,
+                    (_, _) => true)   // 本用例只验证扫描与排序，识别规则另有专门测试
                 .Scan();
 
             Assert.Equal(2, entries.Count);
@@ -57,7 +58,7 @@ public class ShortcutScannerTests
                     ? @"C:\Games\Existing.exe"
                     : @"C:\Games\New.exe";
 
-            var games = new ShortcutScanner(new[] { desktop }, Resolver)
+            var games = new ShortcutScanner(new[] { desktop }, Resolver, (_, _) => true)
                 .ScanAndMerge(config);
 
             Assert.Equal(2, games.Count);
@@ -85,7 +86,8 @@ public class ShortcutScannerTests
 
             var games = new ShortcutScanner(
                     new[] { desktop },
-                    _ => @"C:\Hidden\HiddenGame.exe")
+                    _ => @"C:\Hidden\HiddenGame.exe",
+                    (_, _) => true)   // 本用例验证隐藏列表生效，与识别规则无关
                 .ScanAndMerge(config);
 
             Assert.Empty(games);
@@ -108,7 +110,8 @@ public class ShortcutScannerTests
 
             var entries = new ShortcutScanner(
                     new[] { desktop },
-                    _ => throw new InvalidOperationException("resolver failed"))
+                    _ => throw new InvalidOperationException("resolver failed"),
+                    (_, _) => true)
                 .Scan();
 
             var entry = Assert.Single(entries);
@@ -157,7 +160,7 @@ public class ShortcutScannerTests
             CreateFile(desktop, "Desktop Game.lnk");
             CreateUrlFile(desktop, "Steam Game.url", "steam://rungameid/730");
 
-            var entries = new ShortcutScanner(new[] { desktop }, _ => null).Scan();
+            var entries = new ShortcutScanner(new[] { desktop }, _ => null, (_, _) => true).Scan();
 
             Assert.Equal(2, entries.Count);
             Assert.Contains(entries, e => e.Name == "Desktop Game");
@@ -181,11 +184,10 @@ public class ShortcutScannerTests
 
             var entries = new ShortcutScanner(new[] { desktop }).Scan();
 
-            // 损坏的 .url 文件仍然保留为卡片（无 TargetPath），正常的正常解析
-            Assert.Equal(2, entries.Count);
-            var corrupt = Assert.Single(entries, e => e.Name == "Corrupt");
-            Assert.Null(corrupt.TargetPath);
-            var good = Assert.Single(entries, e => e.Name == "Good");
+            // 损坏的 .url 解析不出目标，严格识别无法确认它是游戏，因此不再收录；
+            // 正常的文件不受影响
+            var good = Assert.Single(entries);
+            Assert.Equal("Good", good.Name);
             Assert.Equal("steam://rungameid/730", good.TargetPath);
         }
         finally
@@ -216,6 +218,66 @@ public class ShortcutScannerTests
             // 已存在相同 URL 的游戏，不应重复添加
             Assert.Single(config.Apps.Where(a => a.Group == AppGroup.Game));
             Assert.Single(games);
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Scan_KeepsOnlyShortcutsThatLookLikeGames()
+    {
+        var desktop = CreateTempDirectory();
+
+        try
+        {
+            // Steam 运行协议：收录
+            CreateUrlFile(desktop, "Counter-Strike 2.url", "steam://rungameid/730");
+            // 目标位于 Steam 库目录：收录
+            CreateUrlFile(
+                desktop,
+                "Hades.url",
+                @"D:\SteamLibrary\steamapps\common\Hades\Hades.exe");
+            // 目标位于已知厂商目录：收录
+            CreateUrlFile(
+                desktop,
+                "Genshin.url",
+                @"D:\Games\Genshin Impact\GenshinImpact.exe");
+            // 普通软件与文档：不收录
+            CreateUrlFile(desktop, "Browser.url", @"C:\Program Files\Browser\browser.exe");
+            CreateUrlFile(desktop, "Report.url", @"C:\Users\TELL\Documents\report.pdf");
+
+            var entries = new ShortcutScanner(new[] { desktop }).Scan();
+
+            Assert.Equal(
+                new[] { "Counter-Strike 2", "Genshin", "Hades" },
+                entries.Select(entry => entry.Name).OrderBy(name => name).ToArray());
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Scan_IgnoresShortcutsInSubdirectories()
+    {
+        var desktop = CreateTempDirectory();
+
+        try
+        {
+            CreateUrlFile(desktop, "Top Level Game.url", "steam://rungameid/730");
+            CreateUrlFile(
+                desktop,
+                Path.Combine("备份", "Nested Game.url"),
+                "steam://rungameid/1172470");
+
+            var entries = new ShortcutScanner(new[] { desktop }).Scan();
+
+            // 只扫描桌面顶层，避免把子文件夹（解压包、备份目录等）里的快捷方式一并收进来
+            var game = Assert.Single(entries);
+            Assert.Equal("Top Level Game", game.Name);
         }
         finally
         {

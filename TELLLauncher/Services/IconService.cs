@@ -73,7 +73,9 @@ public static class IconService
 
         try
         {
-            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(path);
+            // 必须用已解析的 iconPath：上面已把 .lnk 换成真实目标，这里若仍用原始 path，
+            // 取到的是快捷方式自身的图标，而不是目标程序的大图标
+            using var icon = System.Drawing.Icon.ExtractAssociatedIcon(iconPath);
             if (icon is not null)
             {
                 return ConvertToImageSource(icon, 256);

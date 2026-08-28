@@ -7,3 +7,5 @@ publish/
 ui-screenshot.png
 .workbuddy/
 .claude/
+# 从 %LOCALAPPDATA%\TELL Launcher 移出的历史配置备份
+.config-backups/

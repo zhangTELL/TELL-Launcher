@@ -9,12 +9,14 @@ public partial class EditAppDialog : Window
 {
     private readonly AppEntry _draft;
     private readonly string _defaultName;
+    private readonly string? _originalTargetPath;
 
     public EditAppDialog(AppEntry draft, string title, bool lockGroup = false)
     {
         InitializeComponent();
         _draft = draft;
         _defaultName = draft.Name;
+        _originalTargetPath = draft.TargetPath;
         Title = title;
 
         NameTextBox.Text = draft.Name;
@@ -75,9 +77,17 @@ public partial class EditAppDialog : Window
 
         _draft.Name = NameTextBox.Text.Trim();
         _draft.TargetPath = PathTextBox.Text.Trim();
-        _draft.IconPath = string.IsNullOrWhiteSpace(_draft.TargetPath)
-            ? _draft.IconPath
-            : _draft.TargetPath;
+
+        // 只有当图标此前就是"跟随程序路径"时，才让它跟着新的路径走。
+        // 无条件改写会覆盖掉用户为条目单独指定的图标。
+        if (string.IsNullOrWhiteSpace(_draft.IconPath) ||
+            string.Equals(
+                _draft.IconPath,
+                _originalTargetPath,
+                StringComparison.OrdinalIgnoreCase))
+        {
+            _draft.IconPath = _draft.TargetPath;
+        }
         _draft.DetailImagePath = DetailImageTextBox.Text.Trim();
         _draft.Details = DetailsTextBox.Text.Trim();
         _draft.Group = (AppGroup)GroupComboBox.SelectedIndex;

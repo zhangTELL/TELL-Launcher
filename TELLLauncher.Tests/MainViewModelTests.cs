@@ -181,8 +181,8 @@ public class MainViewModelTests
 
             Assert.True(viewModel.IsSearching);
             Assert.False(viewModel.IsSearchEmpty);
-            Assert.Single(viewModel.SearchResults);
-            Assert.Equal("VS Code", viewModel.SearchResults[0].Name);
+            Assert.Single(viewModel.CurrentApps);
+            Assert.Equal("VS Code", viewModel.CurrentApps[0].Name);
             Assert.Empty(viewModel.IdeApps);
             Assert.Empty(viewModel.AiToolApps);
         }
@@ -233,7 +233,8 @@ public class MainViewModelTests
 
             Assert.False(viewModel.IsSearching);
             Assert.True(viewModel.IsSearchEmpty);
-            Assert.Empty(viewModel.SearchResults);
+            // 退出搜索后回到当前分区（IDE）的内容
+            Assert.Single(viewModel.CurrentApps);
             Assert.Single(viewModel.IdeApps);
             Assert.Single(viewModel.AiToolApps);
             Assert.Equal("VS Code", viewModel.IdeApps[0].Name);
@@ -322,7 +323,9 @@ public class MainViewModelTests
                     new AppEntry
                     {
                         Name = "Test Game",
-                        TargetPath = @"C:\Games\Test.exe",
+                        // 用 Steam 库路径，确保条目能通过严格识别存活到被移除；
+                        // 换成普通目录路径会在 v3 迁移里被当成误收条目清理掉
+                        TargetPath = @"D:\SteamLibrary\steamapps\common\Test\Test.exe",
                         Group = AppGroup.Game,
                         Order = 0
                     }
@@ -340,7 +343,9 @@ public class MainViewModelTests
             Assert.DoesNotContain(viewModel.GameApps, app => app.Name == "Test Game");
             Assert.Contains(viewModel.GameApps, app => app.IsSteamLibrary);
             var saved = store.Load();
-            Assert.Contains(@"C:\Games\Test.exe", saved.HiddenGamePaths);
+            Assert.Contains(
+                @"D:\SteamLibrary\steamapps\common\Test\Test.exe",
+                saved.HiddenGamePaths);
         }
         finally
         {
@@ -689,6 +694,85 @@ public class MainViewModelTests
             var reloaded = new ConfigStore(directory).Load();
             Assert.Contains(reloaded.Apps, app => app.Id == "persisted");
             Assert.Contains(reloaded.Apps, app => app.Name == "Added");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task MoveBefore_SameItem_KeepsOriginalOrder()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var store = new ConfigStore(directory);
+            store.Save(new LauncherConfig
+            {
+                DefaultsInitialized = true,
+                Version = 2,
+                Apps =
+                {
+                    new AppEntry { Id = "a", Name = "A", Group = AppGroup.Ide, Order = 0 },
+                    new AppEntry { Id = "b", Name = "B", Group = AppGroup.Ide, Order = 1 },
+                    new AppEntry { Id = "c", Name = "C", Group = AppGroup.Ide, Order = 2 }
+                }
+            });
+
+            var viewModel = CreateViewModel(directory);
+            await viewModel.LoadAsync();
+
+            var itemB = viewModel.IdeApps.Single(app => app.Name == "B");
+            viewModel.MoveBefore(itemB, itemB);
+
+            // 拖到自己身上应无操作。此前 source 会先被移除，导致找不到 target 而坠到末尾
+            Assert.Equal(
+                new[] { "A", "B", "C" },
+                viewModel.IdeApps.Select(app => app.Name).ToArray());
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Search_ReusesViewModels_AcrossRefreshes()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var store = new ConfigStore(directory);
+            store.Save(new LauncherConfig
+            {
+                DefaultsInitialized = true,
+                Version = 2,
+                Apps =
+                {
+                    new AppEntry { Id = "a", Name = "VS Code", Group = AppGroup.Ide, Order = 0 },
+                    new AppEntry { Id = "b", Name = "Cursor", Group = AppGroup.Ide, Order = 1 }
+                }
+            });
+
+            var viewModel = CreateViewModel(directory);
+            await viewModel.LoadAsync();
+            var before = viewModel.IdeApps.ToList();
+
+            // 搜索会走与刷新相同的重建路径
+            viewModel.SearchText = "code";
+            viewModel.SearchText = string.Empty;
+
+            var after = viewModel.IdeApps.ToList();
+            Assert.Equal(
+                new[] { "VS Code", "Cursor" },
+                after.Select(app => app.Name).ToArray());
+
+            // 视图模型按 Id 复用；若每次重建，构造函数里的图标提取会被重复执行
+            Assert.Same(before[0], after[0]);
+            Assert.Same(before[1], after[1]);
         }
         finally
         {

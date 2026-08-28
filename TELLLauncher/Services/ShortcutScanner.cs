@@ -8,13 +8,26 @@ public sealed class ShortcutScanner
 {
     private readonly IReadOnlyList<string> _desktopDirectories;
     private readonly Func<string, string?> _shortcutTargetResolver;
+    private readonly Func<string, string?, bool> _gameFilter;
 
+    /// <param name="desktopDirectories">扫描目录，默认取当前用户桌面与公共桌面。</param>
+    /// <param name="shortcutTargetResolver">解析 .lnk 到真实目标的函数，默认走 WScript.Shell。</param>
+    /// <param name="gameFilter">
+    /// 判定快捷方式是否为游戏，默认使用 <see cref="GameShortcutRules.IsGame"/> 的严格规则。
+    /// 测试可注入自定义判定来隔离扫描逻辑本身。
+    /// </param>
     public ShortcutScanner(
         IEnumerable<string>? desktopDirectories = null,
-        Func<string, string?>? shortcutTargetResolver = null)
+        Func<string, string?>? shortcutTargetResolver = null,
+        Func<string, string?, bool>? gameFilter = null)
     {
         _desktopDirectories = desktopDirectories?.ToList() ?? CreateDefaultDesktopDirectories();
-        _shortcutTargetResolver = shortcutTargetResolver ?? (_ => null);
+
+        // 生产环境默认把 .lnk 解析到真实目标。若保留快捷方式自身的路径，去重键就变成了
+        // 快捷方式文件名：同一游戏改个名会再生成一张卡片，快捷方式被移走后条目还会
+        // 误判为"未定位"。测试可通过构造参数注入自己的解析器。
+        _shortcutTargetResolver = shortcutTargetResolver ?? ResolveShortcutTarget;
+        _gameFilter = gameFilter ?? ((name, targetPath) => GameShortcutRules.IsGame(name, targetPath));
     }
 
     public IReadOnlyList<AppEntry> Scan()
@@ -60,9 +73,13 @@ public sealed class ShortcutScanner
             .Where(app => app.Group == AppGroup.Game)
             .ToList();
 
-        var existingKeys = new HashSet<string>(
-            existingGames.Select(GetKey).Concat(config.HiddenGamePaths),
-            StringComparer.OrdinalIgnoreCase);
+        // 已有条目要给出全部可能的键：历史配置存的是快捷方式本身，
+        // 现在的扫描结果已解析为真实目标，两种形式都要能命中，否则升级后会重复添加
+        var existingKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var key in existingGames.SelectMany(GetKeys).Concat(config.HiddenGamePaths))
+        {
+            existingKeys.Add(key);
+        }
 
         var nextOrder = existingGames.Count == 0
             ? 0
@@ -114,6 +131,13 @@ public sealed class ShortcutScanner
                 targetPath = string.IsNullOrWhiteSpace(resolvedTarget)
                     ? shortcutPath
                     : resolvedTarget;
+            }
+
+            // 只收录能确认为游戏的快捷方式。识别不出来的（浏览器、卸载程序、文档等）
+            // 一律跳过，否则游戏栏目会被桌面上的无关快捷方式占满。
+            if (!_gameFilter(name, targetPath))
+            {
+                continue;
             }
 
             entries.Add(new AppEntry
@@ -192,47 +216,35 @@ public sealed class ShortcutScanner
         }
     }
 
+    /// <summary>
+    /// 只枚举桌面顶层的快捷方式。游戏快捷方式通常直接放在桌面，递归子目录会把解压包、
+    /// 备份文件夹里的快捷方式一并收进来，遇到 junction/符号链接还有死循环风险。
+    /// </summary>
     private static IEnumerable<string> SafeEnumerateShortcuts(string root)
     {
-        var pending = new Stack<string>();
-        pending.Push(root);
-
-        while (pending.Count > 0)
+        if (!Directory.Exists(root))
         {
-            var directory = pending.Pop();
+            yield break;
+        }
 
-            IEnumerable<string> directories;
-            try
-            {
-                directories = Directory.EnumerateDirectories(directory);
-            }
-            catch (Exception ex) when (
-                ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
-            {
-                continue;
-            }
+        List<string> files;
+        try
+        {
+            // 必须在这里立即求值：EnumerateFiles 与 Concat 都是延迟执行的，
+            // 若推迟到 foreach 才枚举，catch 就拦不住真正抛出的 I/O 异常
+            files = Directory.EnumerateFiles(root, "*.lnk")
+                .Concat(Directory.EnumerateFiles(root, "*.url"))
+                .ToList();
+        }
+        catch (Exception ex) when (
+            ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
+        {
+            yield break;
+        }
 
-            foreach (var subdirectory in directories)
-            {
-                pending.Push(subdirectory);
-            }
-
-            IEnumerable<string> files;
-            try
-            {
-                files = Directory.EnumerateFiles(directory, "*.lnk")
-                    .Concat(Directory.EnumerateFiles(directory, "*.url"));
-            }
-            catch (Exception ex) when (
-                ex is UnauthorizedAccessException or DirectoryNotFoundException or IOException)
-            {
-                continue;
-            }
-
-            foreach (var file in files)
-            {
-                yield return file;
-            }
+        foreach (var file in files)
+        {
+            yield return file;
         }
     }
 
@@ -242,6 +254,40 @@ public sealed class ShortcutScanner
             ? entry.IconPath
             : entry.TargetPath;
 
-        return string.IsNullOrWhiteSpace(path) ? entry.Id : path;
+        if (!string.IsNullOrWhiteSpace(path))
+        {
+            return path;
+        }
+
+        // 目标解析失败（如损坏的 .url）时用名称兜底。若退回随机生成的 Id，
+        // 每次扫描都会把它当成新条目再添加一次，卡片会无限累积。
+        return $"name:{entry.Name}";
+    }
+
+    /// <summary>
+    /// 条目所有可能的去重键：目标路径、图标路径，以及快捷方式解析后的真实目标。
+    /// </summary>
+    private static IEnumerable<string> GetKeys(AppEntry entry)
+    {
+        foreach (var path in new[] { entry.TargetPath, entry.IconPath })
+        {
+            if (string.IsNullOrWhiteSpace(path))
+            {
+                continue;
+            }
+
+            yield return path;
+
+            if (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            {
+                var resolved = ResolveShortcutTarget(path);
+                if (!string.IsNullOrWhiteSpace(resolved))
+                {
+                    yield return resolved;
+                }
+            }
+        }
+
+        yield return GetKey(entry);
     }
 }
