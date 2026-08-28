@@ -623,6 +623,98 @@ public class MainViewModelTests
         }
     }
 
+    [Fact]
+    public void Save_BeforeLoad_DoesNotOverwriteConfigOnDisk()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var store = new ConfigStore(directory);
+            store.Save(CreatePersistedConfig());
+
+            var viewModel = CreateViewModel(directory);
+
+            // 模拟窗口在 LoadAsync 完成前关闭：此时 _config 仍是初始的空配置
+            viewModel.Save();
+
+            var reloaded = new ConfigStore(directory).Load();
+            Assert.Contains(reloaded.Apps, app => app.Id == "persisted");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RefreshGames_BeforeLoad_DoesNotOverwriteConfigOnDisk()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var store = new ConfigStore(directory);
+            store.Save(CreatePersistedConfig());
+
+            var viewModel = CreateViewModel(directory);
+
+            // 加载完成前点击"刷新"同样不得写盘
+            await viewModel.RefreshGamesAsync();
+
+            var reloaded = new ConfigStore(directory).Load();
+            Assert.Contains(reloaded.Apps, app => app.Id == "persisted");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Save_AfterLoad_PersistsChanges()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var store = new ConfigStore(directory);
+            store.Save(CreatePersistedConfig());
+
+            var viewModel = CreateViewModel(directory);
+            await viewModel.LoadAsync();
+
+            viewModel.AddApp(new AppEntry { Name = "Added", Group = AppGroup.Ide });
+
+            var reloaded = new ConfigStore(directory).Load();
+            Assert.Contains(reloaded.Apps, app => app.Id == "persisted");
+            Assert.Contains(reloaded.Apps, app => app.Name == "Added");
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    private static LauncherConfig CreatePersistedConfig()
+    {
+        return new LauncherConfig
+        {
+            DefaultsInitialized = true,
+            Version = 2,
+            Apps =
+            {
+                new AppEntry
+                {
+                    Id = "persisted",
+                    Name = "Persisted App",
+                    Group = AppGroup.Ide,
+                    Order = 0
+                }
+            }
+        };
+    }
+
     private static MainViewModel CreateViewModel(string directory)
     {
         var service = new LauncherService(

@@ -20,6 +20,13 @@ public sealed class MainViewModel : ObservableObject
     private readonly CoverImageService? _coverImageService;
     private readonly GameArtworkService? _gameArtworkService;
     private LauncherConfig _config = new();
+
+    /// <summary>
+    /// 标记 <see cref="_config"/> 是否已从磁盘加载。加载完成前 _config 仍是空配置，
+    /// 此时写盘会用空白数据覆盖真实配置，因此所有保存入口都必须先经过此标志。
+    /// </summary>
+    private bool _isLoaded;
+
     private NavSection _selectedNav = NavSection.Ide;
     private string _statusText = string.Empty;
     private string _contentTitle = string.Empty;
@@ -202,17 +209,29 @@ public sealed class MainViewModel : ObservableObject
     public async Task LoadAsync()
     {
         _config = await _launcherService.LoadOrCreateAsync();
+        _isLoaded = true;
         RefreshCollections();
     }
 
     public async Task RefreshGamesAsync()
     {
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         await _launcherService.RefreshGamesAsync(_config);
         RefreshCollections();
     }
 
     public void Save()
     {
+        // 加载完成前 _config 仍是初始的空配置，此时写盘会清空用户数据
+        if (!_isLoaded)
+        {
+            return;
+        }
+
         NormalizeAllOrders();
         _launcherService.Save(_config);
     }
