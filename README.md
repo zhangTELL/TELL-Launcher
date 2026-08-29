@@ -107,6 +107,9 @@ TELL的启动器/
 dotnet test
 ```
 
+## 作者
+zhang TELL/ Yoshinove
+
 ## 鸣谢
 
 本项目由 AI 编程助手辅助开发,鸣谢以下 AI 模型提供的能力支持:
