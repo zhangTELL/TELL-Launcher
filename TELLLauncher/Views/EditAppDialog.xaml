@@ -38,23 +38,38 @@
                    Margin="0,0,0,6"
                    FontWeight="SemiBold" />
         <Grid Grid.Row="3">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="Auto" />
-            </Grid.ColumnDefinitions>
-            <TextBox x:Name="PathTextBox"
-                     Padding="8,6"
-                     Margin="0,0,8,0"
-                     Style="{StaticResource DarkTextBox}" />
-            <Button Grid.Column="1"
-                    Content="浏览"
-                    Padding="12,6"
-                    Style="{StaticResource DarkDialogButton}"
-                    Click="BrowseButton_Click" />
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid Grid.Row="0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <TextBox x:Name="PathTextBox"
+                         Padding="8,6"
+                         Margin="0,0,8,0"
+                         Style="{StaticResource DarkTextBox}"
+                         TextChanged="PathTextBox_TextChanged" />
+                <Button Grid.Column="1"
+                        Content="浏览"
+                        Padding="12,6"
+                        Style="{StaticResource DarkDialogButton}"
+                        Click="BrowseButton_Click" />
+            </Grid>
+            <!-- 路径校验只提示不阻断：有些条目确实要先建好再补文件 -->
+            <TextBlock x:Name="PathWarningText"
+                       Grid.Row="1"
+                       Margin="0,6,0,0"
+                       FontSize="11"
+                       Foreground="#FCD34D"
+                       TextWrapping="Wrap"
+                       Visibility="Collapsed" />
         </Grid>
 
         <TextBlock Grid.Row="4"
-                   Text="页面图片"
+                   Text="详情页横幅图"
                    Margin="0,18,0,6"
                    FontWeight="SemiBold" />
         <Grid Grid.Row="5">

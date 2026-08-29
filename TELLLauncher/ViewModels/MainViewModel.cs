@@ -177,6 +177,14 @@ public sealed class MainViewModel : ObservableObject
         private set => SetProperty(ref _statusText, value);
     }
 
+    /// <summary>最近一次桌面扫描完成的时间，供状态栏展示。</summary>
+    public DateTime? LastScanTime { get; private set; }
+
+    /// <summary>状态栏右侧的扫描时间文案，只到分钟，不做"X 分钟前"的动态刷新。</summary>
+    public string LastScanTimeDisplay => LastScanTime is null
+        ? "尚未扫描"
+        : $"上次扫描 {LastScanTime:yyyy-MM-dd HH:mm}";
+
     public string SearchText
     {
         get => _searchText;
@@ -314,6 +322,7 @@ public sealed class MainViewModel : ObservableObject
         {
             _config = await _launcherService.LoadOrCreateAsync();
             _isLoaded = true;
+            MarkScanCompleted();
         }
         finally
         {
@@ -334,11 +343,19 @@ public sealed class MainViewModel : ObservableObject
         try
         {
             await _launcherService.RefreshGamesAsync(_config);
+            MarkScanCompleted();
         }
         finally
         {
             RefreshCollections();
         }
+    }
+
+    private void MarkScanCompleted()
+    {
+        LastScanTime = DateTime.Now;
+        OnPropertyChanged(nameof(LastScanTime));
+        OnPropertyChanged(nameof(LastScanTimeDisplay));
     }
 
     public void Save()

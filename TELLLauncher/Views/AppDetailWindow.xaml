@@ -79,10 +79,18 @@
                                    FontSize="24"
                                    FontWeight="SemiBold"
                                    Foreground="White" />
-                        <TextBlock Text="{Binding GroupDisplay}"
-                                   Margin="0,4,0,0"
-                                   FontSize="12"
-                                   Foreground="{StaticResource AccentBrush}" />
+                        <StackPanel Orientation="Horizontal"
+                                    Margin="0,4,0,0">
+                            <TextBlock Text="{Binding GroupDisplay}"
+                                       FontSize="12"
+                                       Foreground="{StaticResource AccentBrush}" />
+                            <TextBlock Text="  ·  "
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                            <TextBlock Text="{Binding LastLaunchedDisplay}"
+                                       FontSize="12"
+                                       Foreground="{StaticResource TextSecondaryBrush}" />
+                        </StackPanel>
                     </StackPanel>
                     <Button Grid.Column="1"
                             Content="▶ 启动"

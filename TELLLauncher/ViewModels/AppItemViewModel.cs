@@ -212,6 +212,11 @@ public sealed class AppItemViewModel : ObservableObject
         _ => string.Empty
     };
 
+    /// <summary>详情页横幅里的启动历史文案，精确到分钟。</summary>
+    public string LastLaunchedDisplay => Model.LastLaunchedAt is null
+        ? "尚未启动过"
+        : $"上次启动 {Model.LastLaunchedAt:yyyy-MM-dd HH:mm}";
+
     public bool HasDetailImage => _hasDetailImage ??=
         (!string.IsNullOrWhiteSpace(DetailImagePath) && File.Exists(DetailImagePath))
         || CapsuleImage is not null
@@ -280,6 +285,7 @@ public sealed class AppItemViewModel : ObservableObject
         OnPropertyChanged(nameof(DetailImageSource));
         OnPropertyChanged(nameof(Details));
         OnPropertyChanged(nameof(GroupDisplay));
+        OnPropertyChanged(nameof(LastLaunchedDisplay));
         OnPropertyChanged(nameof(TargetPathDisplay));
         OnPropertyChanged(nameof(HasTargetPath));
         OnPropertyChanged(nameof(HasDetailImage));

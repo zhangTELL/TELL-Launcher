@@ -73,7 +73,7 @@
                     <TextBlock Text="&#xE721;"
                                Margin="10,0,0,0"
                                VerticalAlignment="Center"
-                               FontFamily="Segoe MDL2 Assets"
+                               FontFamily="{StaticResource IconFontFamily}"
                                FontSize="14"
                                Foreground="{StaticResource TextSecondaryBrush}"
                                IsHitTestVisible="False" />
@@ -145,13 +145,12 @@
                     BorderBrush="{StaticResource CardBorderBrush}"
                     BorderThickness="0,0,1,0">
                 <StackPanel Margin="0,16,0,0">
-                    <TextBlock Text="办 公"
+                    <TextBlock Text="办公"
                                Margin="20,0,0,6"
                                FontSize="11"
                                Foreground="{StaticResource TextSecondaryBrush}" />
 
-                    <Button Content="IDE"
-                            Command="{Binding SelectNavCommand}"
+                    <Button Command="{Binding SelectNavCommand}"
                             CommandParameter="{x:Static vm:NavSection.Ide}">
                         <Button.Style>
                             <Style TargetType="Button"
@@ -159,15 +158,24 @@
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SelectedNav}"
                                                  Value="{x:Static vm:NavSection.Ide}">
-                                        <Setter Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                        <Setter Property="Tag" Value="Selected" />
                                         <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE943;"
+                                       FontFamily="{StaticResource IconFontFamily}"
+                                       FontSize="14"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="IDE"
+                                       Margin="10,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
                     </Button>
-                    <Button Content="AI 工具"
-                            Command="{Binding SelectNavCommand}"
+
+                    <Button Command="{Binding SelectNavCommand}"
                             CommandParameter="{x:Static vm:NavSection.AiTool}">
                         <Button.Style>
                             <Style TargetType="Button"
@@ -175,21 +183,29 @@
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SelectedNav}"
                                                  Value="{x:Static vm:NavSection.AiTool}">
-                                        <Setter Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                        <Setter Property="Tag" Value="Selected" />
                                         <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE99A;"
+                                       FontFamily="{StaticResource IconFontFamily}"
+                                       FontSize="14"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="AI 工具"
+                                       Margin="10,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
                     </Button>
 
-                    <TextBlock Text="游 戏"
+                    <TextBlock Text="游戏"
                                Margin="20,18,0,6"
                                FontSize="11"
                                Foreground="{StaticResource TextSecondaryBrush}" />
 
-                    <Button Content="全部游戏"
-                            Command="{Binding SelectNavCommand}"
+                    <Button Command="{Binding SelectNavCommand}"
                             CommandParameter="{x:Static vm:NavSection.Game}">
                         <Button.Style>
                             <Style TargetType="Button"
@@ -197,21 +213,29 @@
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SelectedNav}"
                                                  Value="{x:Static vm:NavSection.Game}">
-                                        <Setter Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                        <Setter Property="Tag" Value="Selected" />
                                         <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE7FC;"
+                                       FontFamily="{StaticResource IconFontFamily}"
+                                       FontSize="14"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="全部游戏"
+                                       Margin="10,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
                     </Button>
 
-                    <TextBlock Text="最 近"
+                    <TextBlock Text="最近"
                                Margin="20,18,0,6"
                                FontSize="11"
                                Foreground="{StaticResource TextSecondaryBrush}" />
 
-                    <Button Content="最近启动"
-                            Command="{Binding SelectNavCommand}"
+                    <Button Command="{Binding SelectNavCommand}"
                             CommandParameter="{x:Static vm:NavSection.Recent}">
                         <Button.Style>
                             <Style TargetType="Button"
@@ -219,12 +243,21 @@
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding SelectedNav}"
                                                  Value="{x:Static vm:NavSection.Recent}">
-                                        <Setter Property="Background" Value="{StaticResource NavSelectedBrush}" />
+                                        <Setter Property="Tag" Value="Selected" />
                                         <Setter Property="Foreground" Value="{StaticResource AccentBrush}" />
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </Button.Style>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE823;"
+                                       FontFamily="{StaticResource IconFontFamily}"
+                                       FontSize="14"
+                                       VerticalAlignment="Center" />
+                            <TextBlock Text="最近启动"
+                                       Margin="10,0,0,0"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
                     </Button>
                 </StackPanel>
             </Border>
@@ -376,7 +409,10 @@
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
                     <ScrollViewer.Style>
-                        <Style TargetType="ScrollViewer">
+                        <!-- 必须继承隐式样式：本地 Style 会整个覆盖 App.xaml 里的
+                             暗色滚动条模板，漏掉 BasedOn 滚动条就会变回系统亮色 -->
+                        <Style TargetType="ScrollViewer"
+                               BasedOn="{StaticResource {x:Type ScrollViewer}}">
                             <Setter Property="Visibility" Value="Visible" />
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsLoading}" Value="True">
@@ -415,16 +451,30 @@
                                 <Setter Property="Margin" Value="0" />
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
                                 <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <!-- 必须整体替换系统模板：系统 ListBoxItem 模板自带
+                                             "悬停画高亮蓝边框"的触发器，且模板触发器优先级
+                                             高于样式值，仅在样式里改 BorderBrush 压不住 -->
+                                        <ControlTemplate TargetType="ListBoxItem">
+                                            <Border x:Name="Bd"
+                                                    Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    CornerRadius="6">
+                                                <ContentPresenter />
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsFocused" Value="True">
+                                                    <!-- 键盘导航的焦点环用中性灰：
+                                                         强调蓝会被误读成悬停高亮 -->
+                                                    <Setter TargetName="Bd" Property="BorderBrush" Value="#3D4450" />
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
                                 <Style.Triggers>
-                                    <Trigger Property="IsSelected" Value="True">
-                                        <Setter Property="Background" Value="Transparent" />
-                                    </Trigger>
-                                    <Trigger Property="IsMouseOver" Value="True">
-                                        <Setter Property="Background" Value="Transparent" />
-                                    </Trigger>
-                                    <Trigger Property="IsFocused" Value="True">
-                                        <Setter Property="BorderBrush" Value="#66C0F4" />
-                                    </Trigger>
                                     <!-- 管理模式下切换为抓手光标，让"可拖拽"被看见 -->
                                     <DataTrigger Binding="{Binding DataContext.IsManaging, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
                                                  Value="True">
@@ -540,15 +590,30 @@
             </TextBlock>
         </Border>
 
-        <!-- 状态栏 -->
+        <!-- 状态栏：左侧状态文案，右侧扫描时间 + 刷新入口 -->
         <Border Grid.Row="2"
                 Background="{StaticResource SidebarBackgroundBrush}"
                 BorderBrush="{StaticResource CardBorderBrush}"
                 BorderThickness="0,1,0,0">
-            <TextBlock Text="{Binding StatusText}"
-                       Margin="20,6"
-                       FontSize="12"
-                       Foreground="{StaticResource TextSecondaryBrush}" />
+            <Grid Margin="20,1">
+                <TextBlock Text="{Binding StatusText}"
+                           VerticalAlignment="Center"
+                           FontSize="12"
+                           Foreground="{StaticResource TextSecondaryBrush}" />
+                <StackPanel Orientation="Horizontal"
+                            HorizontalAlignment="Right"
+                            VerticalAlignment="Center">
+                    <TextBlock Text="{Binding LastScanTimeDisplay}"
+                               Margin="0,0,10,0"
+                               VerticalAlignment="Center"
+                               FontSize="12"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                    <Button Content="&#xE72C;"
+                            Style="{StaticResource MiniIconButton}"
+                            ToolTip="重新扫描桌面游戏"
+                            Click="RefreshButton_Click" />
+                </StackPanel>
+            </Grid>
         </Border>
     </Grid>
 </Window>

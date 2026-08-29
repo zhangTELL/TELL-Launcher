@@ -1,7 +1,9 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using Microsoft.Win32;
 using TELLLauncher.Models;
+using TELLLauncher.Services;
 
 namespace TELLLauncher.Views;
 
@@ -32,6 +34,21 @@ public partial class EditAppDialog : Window
         }
 
         WindowHelper.EnableDarkTitleBar(this);
+    }
+
+    private void PathTextBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var path = PathTextBox.Text.Trim();
+        if (string.IsNullOrWhiteSpace(path) ||
+            ProcessLauncher.IsUriTarget(path) ||
+            File.Exists(path))
+        {
+            PathWarningText.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        PathWarningText.Text = "该路径当前不存在，保存后应用会标记为“未定位”；不影响保存";
+        PathWarningText.Visibility = Visibility.Visible;
     }
 
     private void BrowseButton_Click(object sender, RoutedEventArgs e)
