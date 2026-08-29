@@ -131,6 +131,13 @@ public sealed class AppItemViewModel : ObservableObject
             CapsuleImage = image;
             OnPropertyChanged(nameof(HasCapsuleImage));
             OnPropertyChanged(nameof(HasNoCapsuleImage));
+
+            // 封面是异步加载的，详情页可能在封面到位前就已打开；
+            // 大图回退链（自定义图 → 封面 → 图标）需要重新求值
+            _hasDetailImage = null;
+            OnPropertyChanged(nameof(DetailImageSource));
+            OnPropertyChanged(nameof(HasDetailImage));
+            OnPropertyChanged(nameof(HasNoDetailImage));
         }
         catch
         {
@@ -186,11 +193,12 @@ public sealed class AppItemViewModel : ObservableObject
                 }
                 catch
                 {
-                    // 图片加载失败时回退到大图标
+                    // 图片加载失败时继续走回退链
                 }
             }
 
-            return LargeIcon;
+            // 封面优先于图标：卡片上用户看到哪张图，详情页就展示哪张图
+            return CapsuleImage ?? LargeIcon;
         }
     }
 
@@ -206,6 +214,7 @@ public sealed class AppItemViewModel : ObservableObject
 
     public bool HasDetailImage => _hasDetailImage ??=
         (!string.IsNullOrWhiteSpace(DetailImagePath) && File.Exists(DetailImagePath))
+        || CapsuleImage is not null
         || LargeIcon is not null;
 
     public bool HasNoDetailImage => !HasDetailImage;
@@ -213,6 +222,32 @@ public sealed class AppItemViewModel : ObservableObject
     public bool HasDetails => !string.IsNullOrWhiteSpace(Details);
 
     public bool HasNoDetails => !HasDetails;
+
+    public bool HasTargetPath => !string.IsNullOrWhiteSpace(TargetPath);
+
+    /// <summary>
+    /// 详情页展示用的路径描述。steam:// 等协议地址对用户是噪音，翻译成动作说明；
+    /// 原始值仍通过路径行的工具提示与"复制路径"按钮提供。
+    /// </summary>
+    public string TargetPathDisplay
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(TargetPath))
+            {
+                return "未定位";
+            }
+
+            if (!ProcessLauncher.IsUriTarget(TargetPath))
+            {
+                return TargetPath;
+            }
+
+            return TargetPath.StartsWith("steam://", StringComparison.OrdinalIgnoreCase)
+                ? "通过 Steam 启动"
+                : "通过系统默认程序启动";
+        }
+    }
 
     public void Refresh()
     {
@@ -245,6 +280,8 @@ public sealed class AppItemViewModel : ObservableObject
         OnPropertyChanged(nameof(DetailImageSource));
         OnPropertyChanged(nameof(Details));
         OnPropertyChanged(nameof(GroupDisplay));
+        OnPropertyChanged(nameof(TargetPathDisplay));
+        OnPropertyChanged(nameof(HasTargetPath));
         OnPropertyChanged(nameof(HasDetailImage));
         OnPropertyChanged(nameof(HasNoDetailImage));
         OnPropertyChanged(nameof(HasDetails));

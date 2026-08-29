@@ -1,4 +1,6 @@
+using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
 using TELLLauncher.Models;
 using TELLLauncher.ViewModels;
 
@@ -71,5 +73,23 @@ public partial class AppDetailWindow : Window
     private void CloseButton_Click(object sender, RoutedEventArgs e)
     {
         Close();
+    }
+
+    private async void CopyPathButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (string.IsNullOrWhiteSpace(_item.TargetPath) ||
+            sender is not Button button)
+        {
+            return;
+        }
+
+        Clipboard.SetText(_item.TargetPath);
+        button.Content = "已复制";
+        button.IsEnabled = false;
+
+        // 短暂反馈后恢复原状，避免用户不确定是否复制成功
+        await Task.Delay(1500);
+        button.Content = "复制路径";
+        button.IsEnabled = true;
     }
 }

@@ -16,11 +16,7 @@ public static class IconService
         var iconPath = path;
         if (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
         {
-            var target = ShortcutScanner.ResolveShortcutTarget(path);
-            if (!string.IsNullOrWhiteSpace(target) && File.Exists(target))
-            {
-                iconPath = target;
-            }
+            iconPath = ResolveShortcutIconSource(path);
         }
 
         try
@@ -50,11 +46,7 @@ public static class IconService
         var iconPath = path;
         if (path.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
         {
-            var target = ShortcutScanner.ResolveShortcutTarget(path);
-            if (!string.IsNullOrWhiteSpace(target) && File.Exists(target))
-            {
-                iconPath = target;
-            }
+            iconPath = ResolveShortcutIconSource(path);
         }
 
         try
@@ -87,6 +79,25 @@ public static class IconService
         }
 
         return null;
+    }
+
+    /// <summary>
+    /// 决定 .lnk 的图标提取来源。聚合启动器（米哈游 HYP 等）为每个游戏生成指向同一个
+    /// launcher.exe 的快捷方式，只有快捷方式自带的 IconLocation 才是游戏本体图标，
+    /// 因此存在且有效时优先于解析后的目标 exe。
+    /// </summary>
+    private static string ResolveShortcutIconSource(string shortcutPath)
+    {
+        var iconLocation = ShortcutScanner.ResolveShortcutIconLocation(shortcutPath);
+        if (!string.IsNullOrWhiteSpace(iconLocation) && File.Exists(iconLocation))
+        {
+            return iconLocation;
+        }
+
+        var target = ShortcutScanner.ResolveShortcutTarget(shortcutPath);
+        return !string.IsNullOrWhiteSpace(target) && File.Exists(target)
+            ? target
+            : shortcutPath;
     }
 
     private static ImageSource? ConvertToImageSource(System.Drawing.Icon icon, int decodeWidth)

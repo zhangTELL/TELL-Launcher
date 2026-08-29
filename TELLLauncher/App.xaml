@@ -265,6 +265,86 @@
             </Style.Triggers>
         </Style>
 
+        <!-- 深色下拉框本体。此前只样式化了 ComboBoxItem，ComboBox 自身仍是系统白色模板，
+             在暗色对话框里非常突兀 -->
+        <Style TargetType="ComboBox">
+            <Setter Property="Foreground" Value="#FFFFFF" />
+            <Setter Property="Background" Value="#101822" />
+            <Setter Property="BorderBrush" Value="#3D4450" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Padding" Value="10,6" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="SnapsToDevicePixels" Value="True" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ComboBox">
+                        <Grid>
+                            <Border x:Name="Bd"
+                                    Background="{TemplateBinding Background}"
+                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                    CornerRadius="4" />
+                            <!-- 铺满整区的透明按钮负责接收点击并展开下拉 -->
+                            <ToggleButton Background="Transparent"
+                                          BorderThickness="0"
+                                          Focusable="False"
+                                          ClickMode="Press"
+                                          IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}">
+                                <ToggleButton.Template>
+                                    <ControlTemplate TargetType="ToggleButton">
+                                        <Border Background="{TemplateBinding Background}" />
+                                    </ControlTemplate>
+                                </ToggleButton.Template>
+                            </ToggleButton>
+                            <ContentPresenter Content="{TemplateBinding SelectionBoxItem}"
+                                              ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}"
+                                              Margin="{TemplateBinding Padding}"
+                                              VerticalAlignment="Center"
+                                              IsHitTestVisible="False" />
+                            <TextBlock Text="&#xE70D;"
+                                       Margin="0,1,9,0"
+                                       HorizontalAlignment="Right"
+                                       VerticalAlignment="Center"
+                                       FontFamily="Segoe MDL2 Assets"
+                                       FontSize="10"
+                                       Foreground="{StaticResource TextSecondaryBrush}"
+                                       IsHitTestVisible="False" />
+                            <Popup x:Name="PART_Popup"
+                                   IsOpen="{TemplateBinding IsDropDownOpen}"
+                                   Placement="Bottom"
+                                   AllowsTransparency="True"
+                                   Focusable="False"
+                                   PopupAnimation="Fade">
+                                <Border MinWidth="{TemplateBinding ActualWidth}"
+                                        Margin="0,2,0,0"
+                                        Padding="4"
+                                        Background="#171D25"
+                                        BorderBrush="#3D4450"
+                                        BorderThickness="1"
+                                        CornerRadius="4">
+                                    <ScrollViewer MaxHeight="{TemplateBinding MaxDropDownHeight}"
+                                                  VerticalScrollBarVisibility="Auto">
+                                        <ItemsPresenter />
+                                    </ScrollViewer>
+                                </Border>
+                            </Popup>
+                        </Grid>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#66C0F4" />
+                            </Trigger>
+                            <Trigger Property="IsDropDownOpen" Value="True">
+                                <Setter TargetName="Bd" Property="BorderBrush" Value="#66C0F4" />
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- 深色右键菜单 -->
         <!-- 注意：StaticResource 在同一 ResourceDictionary 内要求"先定义后引用"，
              若把 MenuItem 样式写在 ContextMenu 之后，加载时会抛"找不到资源"，
@@ -336,6 +416,72 @@
             <Setter Property="Padding" Value="4" />
             <Setter Property="ItemContainerStyleSelector"
                     Value="{StaticResource CardContextMenuStyleSelector}" />
+        </Style>
+
+        <!-- 加载骨架卡片 -->
+        <!-- 首启要扫描 Program Files，耗时可达数秒。此前这段时间显示的是"这里还空空如也"，
+             用户会误以为没扫到东西。骨架屏明确表达"正在加载"。 -->
+        <Style x:Key="SkeletonCard" TargetType="Border">
+            <Setter Property="Background" Value="#22344A" />
+            <Setter Property="CornerRadius" Value="4" />
+            <Setter Property="Margin" Value="8" />
+            <Setter Property="Opacity" Value="0.9" />
+            <Style.Triggers>
+                <EventTrigger RoutedEvent="Loaded">
+                    <BeginStoryboard>
+                        <Storyboard RepeatBehavior="Forever"
+                                    AutoReverse="True">
+                            <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                                             From="0.9"
+                                             To="0.4"
+                                             Duration="0:0:0.85" />
+                        </Storyboard>
+                    </BeginStoryboard>
+                </EventTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <Style x:Key="SkeletonOfficeCard"
+               TargetType="Border"
+               BasedOn="{StaticResource SkeletonCard}">
+            <Setter Property="Width" Value="340" />
+            <Setter Property="Height" Value="96" />
+        </Style>
+
+        <Style x:Key="SkeletonGameCard"
+               TargetType="Border"
+               BasedOn="{StaticResource SkeletonCard}">
+            <Setter Property="Width" Value="184" />
+            <Setter Property="Height" Value="276" />
+        </Style>
+
+        <!-- 搜索框内的清除按钮 -->
+        <Style x:Key="SearchClearButton" TargetType="Button">
+            <Setter Property="Width" Value="20" />
+            <Setter Property="Height" Value="20" />
+            <Setter Property="Background" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Foreground" Value="#8F98A0" />
+            <Setter Property="FontFamily" Value="Segoe MDL2 Assets" />
+            <Setter Property="FontSize" Value="10" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="10">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#2A475E" />
+                                <Setter Property="Foreground" Value="#FFFFFF" />
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <!-- 应用卡片：游戏竖版胶囊 / 办公横版卡 -->

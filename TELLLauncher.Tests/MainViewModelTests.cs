@@ -134,6 +134,121 @@ public class MainViewModelTests
 
             Assert.True(viewModel.HasNotification);
             Assert.Contains("launch blocked", viewModel.NotificationText);
+            // 启动失败是错误级别，通知条应显示红色而非通用的警告色
+            Assert.Equal(NotificationKind.Error, viewModel.NotificationLevel);
+            Assert.True(viewModel.IsErrorNotification);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void State_BeforeLoad_IsLoading()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var viewModel = CreateViewModel(directory);
+
+            // 配置尚未读出时必须显示骨架屏。此前会落到"集合为空"分支，
+            // 首屏先闪一句"这里还空空如也"，用户会误以为没扫到东西。
+            Assert.Equal(ContentState.Loading, viewModel.State);
+            Assert.True(viewModel.IsLoading);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task LoadAsync_TransitionsOutOfLoading()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var viewModel = CreateViewModel(directory);
+
+            await viewModel.LoadAsync();
+
+            Assert.False(viewModel.IsLoading);
+            Assert.Equal(ContentState.Ready, viewModel.State);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task RecentSection_WithNoLaunchHistory_IsEmpty()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var viewModel = CreateViewModel(directory);
+            await viewModel.LoadAsync();
+
+            // "最近启动"只收集有 LastLaunchedAt 的条目，全新配置下必然为空
+            viewModel.SelectedNav = NavSection.Recent;
+
+            Assert.Equal(ContentState.Empty, viewModel.State);
+            Assert.True(viewModel.IsEmpty);
+            Assert.False(viewModel.IsNoSearchResult);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task Search_WithNoMatch_IsNoSearchResultNotEmpty()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var viewModel = CreateViewModel(directory);
+            await viewModel.LoadAsync();
+
+            viewModel.SearchText = "zzz-不存在的东西";
+
+            // 搜索无果与"分区为空"是两回事：前者要引导清除搜索，后者要引导添加应用
+            Assert.Equal(ContentState.NoSearchResult, viewModel.State);
+            Assert.True(viewModel.IsNoSearchResult);
+            Assert.False(viewModel.IsEmpty);
+            Assert.True(viewModel.IsNotSearchEmpty);
+        }
+        finally
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+    }
+
+    [Fact]
+    public async Task ClearSearchCommand_ResetsSearchTextAndState()
+    {
+        var directory = CreateTempDirectory();
+
+        try
+        {
+            var viewModel = CreateViewModel(directory);
+            await viewModel.LoadAsync();
+
+            viewModel.SearchText = "zzz-不存在的东西";
+            Assert.True(viewModel.IsNoSearchResult);
+
+            viewModel.ClearSearchCommand.Execute(null);
+
+            Assert.Equal(string.Empty, viewModel.SearchText);
+            Assert.True(viewModel.IsSearchEmpty);
+            Assert.False(viewModel.IsNoSearchResult);
         }
         finally
         {

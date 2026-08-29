@@ -285,6 +285,194 @@ public class ShortcutScannerTests
         }
     }
 
+    [Fact]
+    public void Scan_UsesShortcutIconLocationForEntryIcon()
+    {
+        var desktop = CreateTempDirectory();
+        var iconFile = Path.Combine(desktop, "hkrpg_cn.ico");
+        File.WriteAllBytes(iconFile, new byte[] { 1 }); // 只要求文件存在，解码由 IconService 负责
+
+        try
+        {
+            CreateFile(desktop, @"崩坏：星穹铁道.lnk");
+
+            var entries = new ShortcutScanner(
+                    new[] { desktop },
+                    _ => @"D:\miHoYo Launcher\launcher.exe",
+                    (_, _) => true,
+                    _ => iconFile)
+                .Scan();
+
+            var entry = Assert.Single(entries);
+            Assert.Equal(iconFile, entry.IconPath);
+            Assert.Equal(@"D:\miHoYo Launcher\launcher.exe", entry.TargetPath);
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void Scan_KeepsTargetAsIconWhenShortcutHasNoIconLocation()
+    {
+        var desktop = CreateTempDirectory();
+
+        try
+        {
+            CreateFile(desktop, @"Plain Game.lnk");
+
+            var entries = new ShortcutScanner(
+                    new[] { desktop },
+                    _ => @"C:\Games\Game.exe",
+                    (_, _) => true,
+                    _ => null)
+                .Scan();
+
+            var entry = Assert.Single(entries);
+            Assert.Equal(@"C:\Games\Game.exe", entry.IconPath);
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ScanAndMerge_MigratesSharedLauncherIconToShortcutIconLocation()
+    {
+        var desktop = CreateTempDirectory();
+        var iconFile = Path.Combine(desktop, "hkrpg_cn.ico");
+        File.WriteAllBytes(iconFile, new byte[] { 1 });
+        var config = new LauncherConfig();
+        config.Apps.Add(new AppEntry
+        {
+            Name = "崩坏：星穹铁道",
+            TargetPath = @"C:\Users\zhang\Desktop\崩坏：星穹铁道.lnk",
+            IconPath = @"C:\Users\zhang\Desktop\崩坏：星穹铁道.lnk",
+            Group = AppGroup.Game,
+            Order = 0
+        });
+
+        try
+        {
+            var games = new ShortcutScanner(
+                    new[] { desktop },
+                    _ => @"D:\miHoYo Launcher\launcher.exe",
+                    (_, _) => true,
+                    _ => iconFile)
+                .ScanAndMerge(config);
+
+            var game = Assert.Single(games);
+            Assert.Equal(iconFile, game.IconPath);
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    [Fact]
+    public void ScanAndMerge_DoesNotOverwriteExplicitIconPath()
+    {
+        var desktop = CreateTempDirectory();
+        var iconFile = Path.Combine(desktop, "hkrpg_cn.ico");
+        File.WriteAllBytes(iconFile, new byte[] { 1 });
+        var explicitIcon = @"C:\custom\my-icon.ico";
+        var config = new LauncherConfig();
+        config.Apps.Add(new AppEntry
+        {
+            Name = "已自定义图标",
+            TargetPath = @"C:\Users\zhang\Desktop\已自定义图标.lnk",
+            IconPath = explicitIcon,
+            Group = AppGroup.Game,
+            Order = 0
+        });
+
+        try
+        {
+            var games = new ShortcutScanner(
+                    new[] { desktop },
+                    _ => @"D:\miHoYo Launcher\launcher.exe",
+                    (_, _) => true,
+                    _ => iconFile)
+                .ScanAndMerge(config);
+
+            var game = Assert.Single(games);
+            Assert.Equal(explicitIcon, game.IconPath);
+        }
+        finally
+        {
+            Directory.Delete(desktop, recursive: true);
+        }
+    }
+
+    /// <summary>
+    /// 用真实 .lnk（WScript.Shell 生成）验证图标链路：IconLocation 指向一个有效 .ico、
+    /// 目标 exe 不存在时，LoadIcon 仍能出图 —— 证明图标来自 IconLocation 而非目标。
+    /// </summary>
+    [Fact]
+    public void LoadIcon_PrefersShortcutIconLocationOverMissingTarget()
+    {
+        var directory = CreateTempDirectory();
+        var iconFile = Path.Combine(directory, "game.ico");
+        var shortcutPath = Path.Combine(directory, "崩坏：星穹铁道.lnk");
+        WriteIcoFile(iconFile);
+
+        Exception? captured = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var shellType = Type.GetTypeFromProgID("WScript.Shell")!;
+                dynamic shell = Activator.CreateInstance(shellType)!;
+                dynamic shortcut = shell.CreateShortcut(shortcutPath);
+                shortcut.TargetPath = @"Q:\No Such Directory\launcher.exe";
+                shortcut.Arguments = "--game=hkrpg_cn";
+                shortcut.IconLocation = $"{iconFile},0";
+                shortcut.Save();
+
+                var resolved = ShortcutScanner.ResolveShortcutIconLocation(shortcutPath);
+                if (!string.Equals(resolved, iconFile, StringComparison.OrdinalIgnoreCase))
+                {
+                    captured = new InvalidOperationException(
+                        $"IconLocation 解析结果不符：{resolved}");
+                    return;
+                }
+
+                if (IconService.LoadIcon(shortcutPath) is null)
+                {
+                    captured = new InvalidOperationException(
+                        "LoadIcon 未能从 IconLocation 提取图标");
+                }
+            }
+            catch (Exception ex)
+            {
+                captured = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(captured);
+
+        try
+        {
+            Directory.Delete(directory, recursive: true);
+        }
+        catch (IOException)
+        {
+            // COM 服务器偶发延迟释放文件句柄，清理失败不影响结论
+        }
+    }
+
+    private static void WriteIcoFile(string path)
+    {
+        using var stream = File.Create(path);
+        System.Drawing.SystemIcons.Information.Save(stream);
+    }
+
     private static string CreateTempDirectory()
     {
         var path = Path.Combine(

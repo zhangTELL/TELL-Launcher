@@ -8,10 +8,12 @@ public sealed class ShortcutScanner
 {
     private readonly IReadOnlyList<string> _desktopDirectories;
     private readonly Func<string, string?> _shortcutTargetResolver;
+    private readonly Func<string, string?> _shortcutIconResolver;
     private readonly Func<string, string?, bool> _gameFilter;
 
     /// <param name="desktopDirectories">扫描目录，默认取当前用户桌面与公共桌面。</param>
     /// <param name="shortcutTargetResolver">解析 .lnk 到真实目标的函数，默认走 WScript.Shell。</param>
+    /// <param name="shortcutIconResolver">读取 .lnk 自带图标位置的函数，默认走 WScript.Shell。</param>
     /// <param name="gameFilter">
     /// 判定快捷方式是否为游戏，默认使用 <see cref="GameShortcutRules.IsGame"/> 的严格规则。
     /// 测试可注入自定义判定来隔离扫描逻辑本身。
@@ -19,7 +21,8 @@ public sealed class ShortcutScanner
     public ShortcutScanner(
         IEnumerable<string>? desktopDirectories = null,
         Func<string, string?>? shortcutTargetResolver = null,
-        Func<string, string?, bool>? gameFilter = null)
+        Func<string, string?, bool>? gameFilter = null,
+        Func<string, string?>? shortcutIconResolver = null)
     {
         _desktopDirectories = desktopDirectories?.ToList() ?? CreateDefaultDesktopDirectories();
 
@@ -27,6 +30,7 @@ public sealed class ShortcutScanner
         // 快捷方式文件名：同一游戏改个名会再生成一张卡片，快捷方式被移走后条目还会
         // 误判为"未定位"。测试可通过构造参数注入自己的解析器。
         _shortcutTargetResolver = shortcutTargetResolver ?? ResolveShortcutTarget;
+        _shortcutIconResolver = shortcutIconResolver ?? ResolveShortcutIconLocation;
         _gameFilter = gameFilter ?? ((name, targetPath) => GameShortcutRules.IsGame(name, targetPath));
     }
 
@@ -67,11 +71,13 @@ public sealed class ShortcutScanner
         return MergeEntries(config, scannedEntries);
     }
 
-    private static IReadOnlyList<AppEntry> MergeEntries(LauncherConfig config, IReadOnlyList<AppEntry> scannedEntries)
+    private IReadOnlyList<AppEntry> MergeEntries(LauncherConfig config, IReadOnlyList<AppEntry> scannedEntries)
     {
         var existingGames = config.Apps
             .Where(app => app.Group == AppGroup.Game)
             .ToList();
+
+        MigrateLauncherShortcutIcons(existingGames);
 
         // 已有条目要给出全部可能的键：历史配置存的是快捷方式本身，
         // 现在的扫描结果已解析为真实目标，两种形式都要能命中，否则升级后会重复添加
@@ -100,6 +106,32 @@ public sealed class ShortcutScanner
             .Where(app => app.Group == AppGroup.Game && !app.IsHidden)
             .OrderBy(app => app.Order)
             .ToList();
+    }
+
+    /// <summary>
+    /// 迁移：旧版把游戏条目的 IconPath 存成 .lnk 自身或解析后的目标 exe。
+    /// 聚合启动器（米哈游 HYP 等）的所有游戏快捷方式指向同一个 launcher.exe，
+    /// 只有快捷方式自带的 IconLocation 才区分游戏，按它刷新图标。
+    /// 仅当 IconPath 仍与 TargetPath 相同（即从未被单独指定过）时才改写。
+    /// </summary>
+    private void MigrateLauncherShortcutIcons(IReadOnlyList<AppEntry> existingGames)
+    {
+        foreach (var game in existingGames)
+        {
+            if (string.IsNullOrWhiteSpace(game.TargetPath) ||
+                string.IsNullOrWhiteSpace(game.IconPath) ||
+                !string.Equals(game.IconPath, game.TargetPath, StringComparison.OrdinalIgnoreCase) ||
+                !game.TargetPath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            {
+                continue;
+            }
+
+            var iconLocation = _shortcutIconResolver(game.TargetPath);
+            if (!string.IsNullOrWhiteSpace(iconLocation) && File.Exists(iconLocation))
+            {
+                game.IconPath = iconLocation;
+            }
+        }
     }
 
     private IReadOnlyList<AppEntry> BuildEntries(IReadOnlyList<string> shortcuts)
@@ -140,12 +172,25 @@ public sealed class ShortcutScanner
                 continue;
             }
 
+            // 快捷方式自带 IconLocation 且文件存在时优先用作图标：
+            // 聚合启动器（米哈游 HYP 等）的所有游戏快捷方式目标都是同一个 launcher.exe，
+            // 只有 IconLocation 里存的才是游戏本体图标
+            var iconPath = targetPath;
+            if (shortcutPath.EndsWith(".lnk", StringComparison.OrdinalIgnoreCase))
+            {
+                var iconLocation = _shortcutIconResolver(shortcutPath);
+                if (!string.IsNullOrWhiteSpace(iconLocation) && File.Exists(iconLocation))
+                {
+                    iconPath = iconLocation;
+                }
+            }
+
             entries.Add(new AppEntry
             {
                 Id = Guid.NewGuid().ToString("N"),
                 Name = name,
                 TargetPath = targetPath,
-                IconPath = targetPath,
+                IconPath = iconPath,
                 Group = AppGroup.Game,
                 Order = order++,
                 IsHidden = false,
@@ -191,6 +236,40 @@ public sealed class ShortcutScanner
             dynamic shortcut = shell.CreateShortcut(shortcutPath);
             var targetPath = (string?)shortcut.TargetPath;
             return string.IsNullOrWhiteSpace(targetPath) ? null : targetPath;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// 读取 .lnk 自带的图标位置。聚合启动器（米哈游 HYP 等）为每个游戏生成指向同一个
+    /// launcher.exe 的快捷方式，仅 IconLocation 不同 —— 只解析目标 exe 会把所有游戏
+    /// 都显示成启动器图标。返回 "path,index" 中的 path 部分；空路径（",0"，表示使用
+    /// 目标默认图标）返回 null。
+    /// </summary>
+    public static string? ResolveShortcutIconLocation(string shortcutPath)
+    {
+        try
+        {
+            var shellType = Type.GetTypeFromProgID("WScript.Shell");
+            if (shellType is null)
+            {
+                return null;
+            }
+
+            dynamic shell = Activator.CreateInstance(shellType)!;
+            dynamic shortcut = shell.CreateShortcut(shortcutPath);
+            var raw = (string?)shortcut.IconLocation;
+            if (string.IsNullOrWhiteSpace(raw))
+            {
+                return null;
+            }
+
+            var separator = raw.LastIndexOf(',');
+            var path = separator >= 0 ? raw[..separator].Trim() : raw.Trim();
+            return string.IsNullOrWhiteSpace(path) ? null : path;
         }
         catch
         {

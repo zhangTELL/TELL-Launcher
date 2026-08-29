@@ -29,11 +29,36 @@
                    HorizontalAlignment="Center"
                    VerticalAlignment="Center"
                    Visibility="{Binding HasDetailImage, Converter={StaticResource BoolToVis}}" />
-            <TextBlock Text="暂无页面图片"
-                       HorizontalAlignment="Center"
-                       VerticalAlignment="Center"
-                       Foreground="{StaticResource TextSecondaryBrush}"
-                       Visibility="{Binding HasNoDetailImage, Converter={StaticResource BoolToVis}}" />
+
+            <!-- 无图回退：与卡片一致的渐变底 + 首字母，避免整条横幅发黑 -->
+            <Border Visibility="{Binding HasNoDetailImage, Converter={StaticResource BoolToVis}}">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                        <GradientStop Color="#2A475E" Offset="0" />
+                        <GradientStop Color="#101822" Offset="1" />
+                    </LinearGradientBrush>
+                </Border.Background>
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <Border Width="72"
+                            Height="72"
+                            CornerRadius="10"
+                            Background="#101822"
+                            HorizontalAlignment="Center">
+                        <TextBlock Text="{Binding Initial}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   FontSize="30"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource AccentBrush}" />
+                    </Border>
+                    <TextBlock Text="暂无页面图片"
+                               Margin="0,12,0,0"
+                               HorizontalAlignment="Center"
+                               FontSize="12"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                </StackPanel>
+            </Border>
 
             <!-- 底部渐变信息条 -->
             <Border VerticalAlignment="Bottom"
@@ -102,25 +127,45 @@
                 <TextBlock Text="程序路径"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource AccentBrush}" />
-                <TextBlock Text="{Binding TargetPath}"
-                           Margin="0,6,0,18"
-                           TextWrapping="Wrap"
-                           Foreground="{StaticResource TextSecondaryBrush}" />
+                <Grid Margin="0,6,0,18">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <!-- steam:// 等协议地址翻译成动作说明，原始值放在工具提示里 -->
+                    <TextBlock Text="{Binding TargetPathDisplay}"
+                               VerticalAlignment="Center"
+                               TextWrapping="Wrap"
+                               ToolTip="{Binding TargetPath}"
+                               Foreground="{StaticResource TextSecondaryBrush}" />
+                    <Button x:Name="CopyPathButton"
+                            Grid.Column="1"
+                            Content="复制路径"
+                            MinWidth="76"
+                            Padding="10,5"
+                            Margin="16,0,0,0"
+                            VerticalAlignment="Center"
+                            Style="{StaticResource DarkDialogButton}"
+                            Visibility="{Binding HasTargetPath, Converter={StaticResource BoolToVis}}"
+                            Click="CopyPathButton_Click" />
+                </Grid>
 
                 <TextBlock Text="详细信息"
                            FontWeight="SemiBold"
                            Foreground="{StaticResource AccentBrush}" />
+                <!-- 整个信息盒随详情一起隐藏：此前只藏内部文字，
+                     空详情时留下一个 120px 的空框 + "暂无详细信息"双重空状态 -->
                 <Border Margin="0,10,0,0"
                         Padding="14"
                         MinHeight="120"
                         Background="{StaticResource CardBackgroundBrush}"
                         BorderBrush="{StaticResource CardBorderBrush}"
                         BorderThickness="1"
-                        CornerRadius="4">
+                        CornerRadius="4"
+                        Visibility="{Binding HasDetails, Converter={StaticResource BoolToVis}}">
                     <TextBlock Text="{Binding Details}"
                                TextWrapping="Wrap"
-                               Foreground="#C7D5E0"
-                               Visibility="{Binding HasDetails, Converter={StaticResource BoolToVis}}" />
+                               Foreground="#C7D5E0" />
                 </Border>
                 <TextBlock Text="暂无详细信息"
                            Margin="0,14,0,0"

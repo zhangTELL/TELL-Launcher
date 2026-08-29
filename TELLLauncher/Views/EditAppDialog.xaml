@@ -98,11 +98,7 @@
                            FontWeight="SemiBold" />
                 <ComboBox x:Name="GroupComboBox"
                           Width="180"
-                          Padding="8,5"
-                          HorizontalAlignment="Left"
-                          Background="#101822"
-                          Foreground="#FFFFFF"
-                          BorderBrush="#3D4450" />
+                          HorizontalAlignment="Left" />
             </StackPanel>
             <StackPanel Grid.Column="1"
                         Orientation="Horizontal"

@@ -58,13 +58,18 @@
                       Margin="16,0"
                       HorizontalAlignment="Center"
                       VerticalAlignment="Center">
-                    <TextBox Padding="28,7,10,7"
+                    <TextBox Padding="28,7,32,7"
                              VerticalAlignment="Center"
                              BorderBrush="#3D4450"
                              Background="#101822"
                              Foreground="{StaticResource TextPrimaryBrush}"
                              CaretBrush="{StaticResource TextPrimaryBrush}"
-                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" />
+                             Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}">
+                        <TextBox.InputBindings>
+                            <KeyBinding Key="Escape"
+                                        Command="{Binding ClearSearchCommand}" />
+                        </TextBox.InputBindings>
+                    </TextBox>
                     <TextBlock Text="&#xE721;"
                                Margin="10,0,0,0"
                                VerticalAlignment="Center"
@@ -78,6 +83,13 @@
                                Foreground="{StaticResource TextSecondaryBrush}"
                                IsHitTestVisible="False"
                                Visibility="{Binding IsSearchEmpty, Converter={StaticResource BoolToVis}}" />
+                    <Button HorizontalAlignment="Right"
+                            Margin="0,0,6,0"
+                            Content="&#xE711;"
+                            Style="{StaticResource SearchClearButton}"
+                            ToolTip="清除搜索（Esc）"
+                            Command="{Binding ClearSearchCommand}"
+                            Visibility="{Binding IsNotSearchEmpty, Converter={StaticResource BoolToVis}}" />
                 </Grid>
 
                 <StackPanel Grid.Column="2"
@@ -280,6 +292,7 @@
                 </Grid.Style>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="*" />
                 </Grid.RowDefinitions>
 
@@ -297,9 +310,81 @@
                                Foreground="{StaticResource TextSecondaryBrush}" />
                 </StackPanel>
 
-                <ScrollViewer Grid.Row="1"
+                <!-- 管理模式提示条：说明当前可以拖拽排序 -->
+                <Border Grid.Row="1"
+                        Margin="24,10,24,0"
+                        Padding="12,7"
+                        CornerRadius="4"
+                        Background="#16283E"
+                        BorderBrush="#3B82F6"
+                        BorderThickness="1"
+                        Visibility="{Binding IsManaging, Converter={StaticResource BoolToVis}}">
+                    <TextBlock Text="管理模式：拖拽卡片调整顺序，或用卡片右上角的按钮编辑与移除"
+                               FontSize="12"
+                               Foreground="#93C5FD" />
+                </Border>
+
+                <!-- 加载骨架屏 -->
+                <Grid Grid.Row="2"
+                      Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}">
+                    <!-- 横版骨架：IDE / AI 工具 / 最近启动 -->
+                    <WrapPanel Margin="16,18,16,24">
+                        <WrapPanel.Style>
+                            <Style TargetType="WrapPanel">
+                                <Setter Property="Visibility" Value="Visible" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedNav}"
+                                                 Value="{x:Static vm:NavSection.Game}">
+                                        <Setter Property="Visibility" Value="Collapsed" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </WrapPanel.Style>
+                        <Border Style="{StaticResource SkeletonOfficeCard}" />
+                        <Border Style="{StaticResource SkeletonOfficeCard}" />
+                        <Border Style="{StaticResource SkeletonOfficeCard}" />
+                        <Border Style="{StaticResource SkeletonOfficeCard}" />
+                        <Border Style="{StaticResource SkeletonOfficeCard}" />
+                        <Border Style="{StaticResource SkeletonOfficeCard}" />
+                    </WrapPanel>
+
+                    <!-- 竖版骨架：游戏 -->
+                    <WrapPanel Margin="16,18,16,24">
+                        <WrapPanel.Style>
+                            <Style TargetType="WrapPanel">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding SelectedNav}"
+                                                 Value="{x:Static vm:NavSection.Game}">
+                                        <Setter Property="Visibility" Value="Visible" />
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </WrapPanel.Style>
+                        <Border Style="{StaticResource SkeletonGameCard}" />
+                        <Border Style="{StaticResource SkeletonGameCard}" />
+                        <Border Style="{StaticResource SkeletonGameCard}" />
+                        <Border Style="{StaticResource SkeletonGameCard}" />
+                        <Border Style="{StaticResource SkeletonGameCard}" />
+                        <Border Style="{StaticResource SkeletonGameCard}" />
+                        <Border Style="{StaticResource SkeletonGameCard}" />
+                        <Border Style="{StaticResource SkeletonGameCard}" />
+                    </WrapPanel>
+                </Grid>
+
+                <ScrollViewer Grid.Row="2"
                               VerticalScrollBarVisibility="Auto"
                               HorizontalScrollBarVisibility="Disabled">
+                    <ScrollViewer.Style>
+                        <Style TargetType="ScrollViewer">
+                            <Setter Property="Visibility" Value="Visible" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding IsLoading}" Value="True">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ScrollViewer.Style>
                     <ListBox x:Name="AppListBox"
                              ItemsSource="{Binding CurrentApps}"
                              Margin="16,10,16,24"
@@ -322,7 +407,10 @@
                         <ListBox.ItemContainerStyle>
                             <Style TargetType="ListBoxItem">
                                 <Setter Property="Background" Value="Transparent" />
-                                <Setter Property="BorderThickness" Value="0" />
+                                <!-- 边框始终占 2px、只切换颜色：若等到聚焦时才加厚度，
+                                     卡片会在键盘导航时逐格位移 -->
+                                <Setter Property="BorderThickness" Value="2" />
+                                <Setter Property="BorderBrush" Value="Transparent" />
                                 <Setter Property="Padding" Value="0" />
                                 <Setter Property="Margin" Value="0" />
                                 <Setter Property="HorizontalContentAlignment" Value="Stretch" />
@@ -334,35 +422,73 @@
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter Property="Background" Value="Transparent" />
                                     </Trigger>
+                                    <Trigger Property="IsFocused" Value="True">
+                                        <Setter Property="BorderBrush" Value="#66C0F4" />
+                                    </Trigger>
+                                    <!-- 管理模式下切换为抓手光标，让"可拖拽"被看见 -->
+                                    <DataTrigger Binding="{Binding DataContext.IsManaging, RelativeSource={RelativeSource AncestorType={x:Type Window}}}"
+                                                 Value="True">
+                                        <Setter Property="Cursor" Value="SizeAll" />
+                                    </DataTrigger>
                                 </Style.Triggers>
                             </Style>
                         </ListBox.ItemContainerStyle>
                     </ListBox>
                 </ScrollViewer>
 
-                <!-- 空状态 -->
-                <TextBlock Grid.Row="1"
-                           Text="这里还空空如也"
-                           HorizontalAlignment="Center"
-                           VerticalAlignment="Center"
-                           FontSize="15"
-                           Foreground="{StaticResource TextSecondaryBrush}">
-                    <TextBlock.Style>
-                        <Style TargetType="TextBlock">
+                <!-- 空状态：区分"当前分区为空"与"搜索无结果"，两者语义完全不同 -->
+                <StackPanel Grid.Row="2"
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center">
+                    <StackPanel.Style>
+                        <Style TargetType="StackPanel">
                             <Setter Property="Visibility" Value="Collapsed" />
                             <Style.Triggers>
-                                <DataTrigger Binding="{Binding CurrentApps.Count}"
-                                             Value="0">
+                                <DataTrigger Binding="{Binding IsEmpty}" Value="True">
+                                    <Setter Property="Visibility" Value="Visible" />
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding IsNoSearchResult}" Value="True">
                                     <Setter Property="Visibility" Value="Visible" />
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
-                    </TextBlock.Style>
-                </TextBlock>
+                    </StackPanel.Style>
+
+                    <StackPanel Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="这里还空空如也"
+                                   HorizontalAlignment="Center"
+                                   FontSize="15"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                        <TextBlock Text="点击右上角 + 添加第一个应用"
+                                   Margin="0,8,0,0"
+                                   HorizontalAlignment="Center"
+                                   FontSize="12"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                        <Button Content="添加应用"
+                                Margin="0,16,0,0"
+                                Padding="18,8"
+                                HorizontalAlignment="Center"
+                                Style="{StaticResource DarkDialogButton}"
+                                Click="AddButton_Click" />
+                    </StackPanel>
+
+                    <StackPanel Visibility="{Binding IsNoSearchResult, Converter={StaticResource BoolToVis}}">
+                        <TextBlock Text="未找到匹配的应用"
+                                   HorizontalAlignment="Center"
+                                   FontSize="15"
+                                   Foreground="{StaticResource TextSecondaryBrush}" />
+                        <Button Content="清除搜索"
+                                Margin="0,16,0,0"
+                                Padding="18,8"
+                                HorizontalAlignment="Center"
+                                Style="{StaticResource DarkDialogButton}"
+                                Command="{Binding ClearSearchCommand}" />
+                    </StackPanel>
+                </StackPanel>
             </Grid>
         </Grid>
 
-        <!-- 通知条 -->
+        <!-- 通知条：按级别切换配色，此前只有一种警告色 -->
         <Border Grid.Row="1"
                 Margin="0,12,0,0"
                 Padding="16,9"
@@ -370,14 +496,48 @@
                 VerticalAlignment="Top"
                 Panel.ZIndex="10"
                 IsHitTestVisible="False"
-                Background="#3B1D1D"
-                BorderBrush="#B45309"
                 BorderThickness="1"
                 CornerRadius="4"
                 Visibility="{Binding HasNotification, Converter={StaticResource BoolToVis}}">
+            <Border.Style>
+                <Style TargetType="Border">
+                    <Setter Property="Background" Value="#16283E" />
+                    <Setter Property="BorderBrush" Value="#3B82F6" />
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsSuccessNotification}" Value="True">
+                            <Setter Property="Background" Value="#14331F" />
+                            <Setter Property="BorderBrush" Value="#22C55E" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsWarningNotification}" Value="True">
+                            <Setter Property="Background" Value="#3B2E14" />
+                            <Setter Property="BorderBrush" Value="#F59E0B" />
+                        </DataTrigger>
+                        <DataTrigger Binding="{Binding IsErrorNotification}" Value="True">
+                            <Setter Property="Background" Value="#3B1D1D" />
+                            <Setter Property="BorderBrush" Value="#EF4444" />
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Border.Style>
             <TextBlock Text="{Binding NotificationText}"
-                       FontSize="13"
-                       Foreground="#FBBF24" />
+                       FontSize="13">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Foreground" Value="#93C5FD" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsSuccessNotification}" Value="True">
+                                <Setter Property="Foreground" Value="#86EFAC" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsWarningNotification}" Value="True">
+                                <Setter Property="Foreground" Value="#FCD34D" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding IsErrorNotification}" Value="True">
+                                <Setter Property="Foreground" Value="#FCA5A5" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
         </Border>
 
         <!-- 状态栏 -->

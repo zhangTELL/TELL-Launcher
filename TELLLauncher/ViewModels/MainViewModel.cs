@@ -13,6 +13,35 @@ public enum NavSection
     Recent
 }
 
+/// <summary>内容区展示状态。</summary>
+/// <remarks>
+/// 此前只有一个"当前集合是否为空"的布尔判断，导致首屏加载、真空分区、
+/// 搜索无结果三种截然不同的情况共用一句"这里还空空如也"。
+/// </remarks>
+public enum ContentState
+{
+    /// <summary>正在加载或刷新，应显示骨架屏。</summary>
+    Loading,
+
+    /// <summary>有内容可展示。</summary>
+    Ready,
+
+    /// <summary>当前分区确实没有任何条目。</summary>
+    Empty,
+
+    /// <summary>搜索无匹配结果。</summary>
+    NoSearchResult
+}
+
+/// <summary>通知级别，决定通知条的配色。</summary>
+public enum NotificationKind
+{
+    Info,
+    Success,
+    Warning,
+    Error
+}
+
 public sealed class MainViewModel : ObservableObject
 {
     private readonly LauncherService _launcherService;
@@ -43,6 +72,14 @@ public sealed class MainViewModel : ObservableObject
     private bool _hasNotification;
     private bool _isSearching;
     private bool _isManaging;
+
+    /// <summary>
+    /// 初始即为 Loading：配置尚未从磁盘读出，此时若显示空状态文案，
+    /// 用户会误以为程序没扫到任何东西。
+    /// </summary>
+    private ContentState _state = ContentState.Loading;
+
+    private NotificationKind _notificationLevel = NotificationKind.Warning;
 
     public MainViewModel(
         LauncherService launcherService,
@@ -88,6 +125,7 @@ public sealed class MainViewModel : ObservableObject
                 SelectedNav = nav;
             }
         });
+        ClearSearchCommand = new RelayCommand(_ => SearchText = string.Empty);
     }
 
     public event Action<AppItemViewModel>? EditRequested;
@@ -147,12 +185,16 @@ public sealed class MainViewModel : ObservableObject
             if (SetProperty(ref _searchText, value))
             {
                 OnPropertyChanged(nameof(IsSearchEmpty));
+                OnPropertyChanged(nameof(IsNotSearchEmpty));
                 RefreshCollections();
             }
         }
     }
 
     public bool IsSearchEmpty => string.IsNullOrWhiteSpace(SearchText);
+
+    /// <summary>搜索框有内容，用于显示清除按钮。</summary>
+    public bool IsNotSearchEmpty => !IsSearchEmpty;
 
     public bool IsSearching
     {
@@ -182,6 +224,30 @@ public sealed class MainViewModel : ObservableObject
 
     public bool IsNotManaging => !IsManaging;
 
+    /// <summary>内容区当前状态，决定显示骨架屏、列表还是空状态。</summary>
+    public ContentState State
+    {
+        get => _state;
+        private set
+        {
+            if (SetProperty(ref _state, value))
+            {
+                OnPropertyChanged(nameof(IsLoading));
+                OnPropertyChanged(nameof(IsReady));
+                OnPropertyChanged(nameof(IsEmpty));
+                OnPropertyChanged(nameof(IsNoSearchResult));
+            }
+        }
+    }
+
+    public bool IsLoading => State == ContentState.Loading;
+
+    public bool IsReady => State == ContentState.Ready;
+
+    public bool IsEmpty => State == ContentState.Empty;
+
+    public bool IsNoSearchResult => State == ContentState.NoSearchResult;
+
     public string NotificationText
     {
         get => _notificationText;
@@ -193,6 +259,30 @@ public sealed class MainViewModel : ObservableObject
         get => _hasNotification;
         private set => SetProperty(ref _hasNotification, value);
     }
+
+    /// <summary>通知级别。XAML 据此选择通知条配色。</summary>
+    public NotificationKind NotificationLevel
+    {
+        get => _notificationLevel;
+        private set
+        {
+            if (SetProperty(ref _notificationLevel, value))
+            {
+                OnPropertyChanged(nameof(IsInfoNotification));
+                OnPropertyChanged(nameof(IsSuccessNotification));
+                OnPropertyChanged(nameof(IsWarningNotification));
+                OnPropertyChanged(nameof(IsErrorNotification));
+            }
+        }
+    }
+
+    public bool IsInfoNotification => NotificationLevel == NotificationKind.Info;
+
+    public bool IsSuccessNotification => NotificationLevel == NotificationKind.Success;
+
+    public bool IsWarningNotification => NotificationLevel == NotificationKind.Warning;
+
+    public bool IsErrorNotification => NotificationLevel == NotificationKind.Error;
 
     public RelayCommand LaunchCommand { get; }
 
@@ -214,11 +304,23 @@ public sealed class MainViewModel : ObservableObject
 
     public RelayCommand SelectNavCommand { get; }
 
+    /// <summary>清空搜索框，供 × 按钮与 Esc 键使用。</summary>
+    public RelayCommand ClearSearchCommand { get; }
+
     public async Task LoadAsync()
     {
-        _config = await _launcherService.LoadOrCreateAsync();
-        _isLoaded = true;
-        RefreshCollections();
+        State = ContentState.Loading;
+        try
+        {
+            _config = await _launcherService.LoadOrCreateAsync();
+            _isLoaded = true;
+        }
+        finally
+        {
+            // 加载失败也必须退出骨架屏，否则界面会永远停在 Loading。
+            // 异常继续向上抛，由 App 的全局异常处理接管。
+            RefreshCollections();
+        }
     }
 
     public async Task RefreshGamesAsync()
@@ -228,8 +330,15 @@ public sealed class MainViewModel : ObservableObject
             return;
         }
 
-        await _launcherService.RefreshGamesAsync(_config);
-        RefreshCollections();
+        State = ContentState.Loading;
+        try
+        {
+            await _launcherService.RefreshGamesAsync(_config);
+        }
+        finally
+        {
+            RefreshCollections();
+        }
     }
 
     public void Save()
@@ -267,7 +376,7 @@ public sealed class MainViewModel : ObservableObject
         var result = _processLauncher.Launch(item.TargetPath!);
         if (!result.Success)
         {
-            ShowNotification($"启动失败：{result.Message}");
+            ShowNotification($"启动失败：{result.Message}", NotificationKind.Error);
             return;
         }
 
@@ -455,9 +564,12 @@ public sealed class MainViewModel : ObservableObject
         IsManaging = !IsManaging;
     }
 
-    private void ShowNotification(string message)
+    private void ShowNotification(
+        string message,
+        NotificationKind kind = NotificationKind.Warning)
     {
         NotificationText = message;
+        NotificationLevel = kind;
         HasNotification = true;
     }
 
@@ -494,6 +606,9 @@ public sealed class MainViewModel : ObservableObject
             ContentTitle = "搜索结果";
             ContentSubtitle = $"{matches.Count} 个";
             StatusText = $"搜索结果 {matches.Count} 个";
+            State = matches.Count == 0
+                ? ContentState.NoSearchResult
+                : ContentState.Ready;
             return;
         }
 
@@ -525,6 +640,8 @@ public sealed class MainViewModel : ObservableObject
         }
 
         StatusText = $"办公 {IdeApps.Count + AiToolApps.Count} 个 · 游戏 {GameApps.Count} 个";
+
+        // ApplyNavSelection 会在填充 CurrentApps 后计算状态
         ApplyNavSelection();
     }
 
@@ -598,6 +715,12 @@ public sealed class MainViewModel : ObservableObject
         ContentSubtitle = SelectedNav == NavSection.Recent
             ? (source.Count == 0 ? "还没有启动记录" : $"{source.Count} 个")
             : $"{source.Count} 个";
+
+        // 状态随 CurrentApps 一起更新。放在这里而不是 RefreshCollections 末尾，
+        // 是因为切换导航分区时只有本方法被调用，状态同样需要重算。
+        State = CurrentApps.Count == 0
+            ? ContentState.Empty
+            : ContentState.Ready;
     }
 
     private static bool MatchesSearch(AppEntry app, string searchText)
